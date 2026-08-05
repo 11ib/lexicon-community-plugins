@@ -92,7 +92,13 @@ export async function runAction(options) {
   const storage = {
     save(key, value) {
       perms.storage()
-      storageState.set(key, value)
+
+      // Lexicon serialises storage values, so what comes back out is the JSON
+      // form of what went in. Strings, numbers, booleans, null, arrays and
+      // nested objects survive intact — but a Date goes in as an object and
+      // comes back as an ISO string. Round-tripping here reproduces that
+      // instead of handing back a live Date the real app would not give you.
+      storageState.set(key, value === undefined ? undefined : JSON.parse(JSON.stringify(value)))
     },
 
     load(key) {

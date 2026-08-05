@@ -13,19 +13,29 @@
 
 export const RUNTIME_SPEC = {
   lexiconVersion: null,
-  probedAt: null,
+  probedAt: '2026-08-05',
 
-  // Size of each _library.track.getNextAllBatch() page.
-  trackBatchSize: { value: 1000, source: 'guess' },
+  // Size of each _library.track.getNextAllBatch() page. Observed exactly 1000
+  // per batch across a 66,422 track library, ids ascending.
+  trackBatchSize: { value: 1000, source: 'probe' },
+
+  // Whether _library.track.getNextAllBatch() returns a promise.
+  batchAccessorIsAsync: { value: true, source: 'probe' },
 
   // What _storage.load() returns for a key that was never saved.
-  storageMissingValue: { value: null, source: 'docs' },
+  storageMissingValue: { value: null, source: 'probe' },
 
-  // Whether _storage.load / _storage.save return promises.
-  storageIsAsync: { value: false, source: 'docs' },
+  // _storage.load and _storage.save are both SYNCHRONOUS — neither returns a
+  // thenable. Awaiting them is harmless but unnecessary.
+  storageIsAsync: { value: false, source: 'probe' },
 
-  // Whether values survive a storage round trip with their type intact.
-  storagePreservesTypes: { value: true, source: 'docs' },
+  // Strings, numbers, booleans, null, arrays and nested objects all survive a
+  // round trip with their type intact.
+  storagePreservesTypes: { value: true, source: 'probe' },
+
+  // ...but a Date does NOT. It is serialised to an ISO string on save and
+  // comes back as a string. Anything relying on Date methods must re-wrap it.
+  storagePreservesDates: { value: false, source: 'probe' },
 
   // Docs say settings are always delivered as strings.
   settingsAreStrings: { value: true, source: 'docs' },
@@ -39,17 +49,47 @@ export const RUNTIME_SPEC = {
   //   'none'    — not enforced at runtime at all
   permissionDenialMode: { value: 'throw', source: 'guess' },
 
-  // How a write to a field outside modifyFields behaves:
+  // How a write to a field outside modifyFields behaves.
   //   'throw'   — assignment raises
   //   'ignored' — assignment succeeds in memory but is not persisted
   //   'applied' — persisted anyway (permissions not enforced on write)
-  modifyFieldDenialMode: { value: 'ignored', source: 'guess' },
+  //
+  // CONFIRMED 'ignored', and this is the nastiest failure mode in the whole
+  // plugin system. An action with modifyFields: ["extra1"] wrote both extra1
+  // and extra2. Neither assignment threw, both read back correctly in memory,
+  // the action reported success — and only extra1 reached the database.
+  // Lexicon logged "Saved changes to 8 tracks(s)" either way.
+  //
+  // This is exactly why the harness enforces modifyFields strictly: the app
+  // gives you no signal at all.
+  modifyFieldDenialMode: { value: 'ignored', source: 'probe' },
+
+  // Assigning a property that is not part of the track schema at all is also
+  // silently dropped rather than rejected.
+  unknownFieldWritesDropped: { value: true, source: 'probe' },
 
   // Whether _vars.playlistsAll is a flat array or a nested tree.
   playlistsAllIsFlat: { value: true, source: 'guess' },
 
   // Whether playlist.getTrackIds() / getTracks() return promises.
   playlistAccessorsAreAsync: { value: true, source: 'docs' }
+}
+
+// Sandbox parser restrictions discovered by probing, beyond the four the docs
+// list. Each maps to a lint rule in eslint.config.js.
+export const SANDBOX_PARSER_FACTS = {
+  // `a?.b` fails with: Unexpected token after inlineIf: ?: ? "71"
+  // The ternary ?: operator itself is fine — it is specifically ?. that breaks.
+  optionalChaining: { supported: false, source: 'probe' },
+
+  // `Object.prototype.hasOwnProperty.call(x, k)` and comparisons against
+  // Object.prototype fail with:
+  //   Static method or property access not permitted: Object.prototype
+  objectPrototypeAccess: { supported: false, source: 'probe' },
+
+  // A catch binding inside a nested function declaration failed with
+  // "err is not defined", while a top-level try/catch works. Being confirmed.
+  catchInsideNestedFunction: { supported: false, source: 'probe-pending' }
 }
 
 // Fields that appear on a track object handed to a plugin, with the defaults a
@@ -103,7 +143,14 @@ export const TRACK_DEFAULTS = {
   data: {},
   tags: [],
   cuepoints: [],
-  tempomarkers: []
+  tempomarkers: [],
+
+  // Present on the object plugins receive, but not in the Local API's Track
+  // schema. Observed via _library.track.getNextAllBatch().
+  releaseDate: null,
+  hasCuepoints: 0,
+  hasTempomarkers: 0,
+  cloudFileState: null
 }
 
 export const PLAYLIST_DEFAULTS = {

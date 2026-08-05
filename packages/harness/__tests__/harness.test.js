@@ -249,6 +249,18 @@ _helpers.Report(String(_storage.load('obj').a))`,
     expect(result.storage.obj).toEqual({ a: 1 })
   })
 
+  it('does not preserve Date objects through storage, matching Lexicon', async () => {
+    // Observed in a real Lexicon: a Date is saved as an ISO string and reads
+    // back as a string, so calling Date methods on it would throw in the app.
+    const result = await run(
+      `_storage.save('when', new Date('2024-01-01T00:00:00.000Z'))
+_helpers.Report(typeof _storage.load('when'))`,
+      { storage: true }
+    )
+
+    expect(result.report).toEqual(['string'])
+  })
+
   it('feeds queued answers to showInputDialog', async () => {
     const result = await run(
       `const a = await _ui.showInputDialog({ message: 'First?' })

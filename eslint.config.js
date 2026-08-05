@@ -36,6 +36,48 @@ const SANDBOX_RULES = {
       selector: 'DoWhileStatement',
       message: 'Lexicon\'s parser rejects do-while loops. Use a while loop instead.'
     },
+
+    // --- Undocumented restrictions, found by probing a real Lexicon. ---
+    // See packages/harness/src/runtime-spec.js (SANDBOX_PARSER_FACTS).
+
+    {
+      // Real error: Unexpected token after inlineIf: ?: ? "71"
+      // The ternary ?: is fine; it is specifically ?. that the parser chokes on.
+      selector: 'ChainExpression',
+      message:
+        'Lexicon\'s parser rejects optional chaining (?.). Use an explicit check: `if (a && a.b)`.'
+    },
+    {
+      // Real error: Static method or property access not permitted: Object.prototype
+      selector: 'MemberExpression[object.name="Object"][property.name="prototype"]',
+      message:
+        'Lexicon blocks Object.prototype access. Use `Object.keys(obj).includes(key)` instead of Object.prototype.hasOwnProperty.call.'
+    },
+    {
+      selector: 'MemberExpression[object.name="Array"][property.name="prototype"]',
+      message: 'Lexicon blocks prototype access on built-ins.'
+    },
+    {
+      selector: 'MemberExpression[object.name="Function"][property.name="prototype"]',
+      message: 'Lexicon blocks prototype access on built-ins.'
+    },
+    {
+      // A catch binding inside a nested function declaration failed at runtime
+      // with "err is not defined", while a top-level try/catch works fine.
+      selector: 'FunctionDeclaration TryStatement > CatchClause[param!=null]',
+      message:
+        'A catch binding inside a nested function does not work in Lexicon ("err is not defined"). Move the try/catch to the top level of the action.'
+    },
+    {
+      selector: 'FunctionExpression TryStatement > CatchClause[param!=null]',
+      message:
+        'A catch binding inside a nested function does not work in Lexicon. Move the try/catch to the top level of the action.'
+    },
+    {
+      selector: 'ArrowFunctionExpression TryStatement > CatchClause[param!=null]',
+      message:
+        'A catch binding inside a nested function does not work in Lexicon. Move the try/catch to the top level of the action.'
+    },
     {
       selector: 'ImportDeclaration',
       message: 'Plugin scripts cannot use import. Each action file is standalone.'
