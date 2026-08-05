@@ -1,0 +1,40 @@
+{
+  "id": "lexicon-community.example-energy-rating",
+  "author": {
+    "name": "Lexicon Community"
+  },
+  "actions": [
+    {
+      "id": "energy.to.rating",
+      "name": "Energy To Star Rating",
+      "description": "Converts each selected track's energy value into a 0-5 star rating.",
+      "config": {
+        "permissions": {
+          "track": {
+            "read": ["selected"],
+            "modify": ["selected"],
+            "modifyFields": ["rating"]
+          }
+        },
+        "settings": {
+          "Energy Per Star": "2"
+        }
+      }
+    },
+    {
+      "id": "playlist.count.suffix",
+      "name": "Add Track Count To Playlist Name",
+      "description": "Renames every playlist so its name ends with the number of tracks it holds.",
+      "config": {
+        "permissions": {
+          "playlist": {
+            "read": ["all"],
+            "modify": ["all"],
+            "modifyFields": ["name"]
+          }
+        },
+        "allowParallel": false
+      }
+    }
+  ]
+}

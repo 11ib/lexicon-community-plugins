@@ -1,0 +1,22 @@
+{
+  "name": "@lexicon-community/harness",
+  "version": "0.1.0",
+  "description": "Run and test Lexicon DJ plugin actions outside of Lexicon.",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "src/"
+  ],
+  "keywords": [
+    "lexicon",
+    "lexicondj",
+    "dj",
+    "plugin",
+    "testing"
+  ],
+  "license": "MIT"
+}

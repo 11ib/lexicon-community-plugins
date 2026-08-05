@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/lexicon-community/plugins/schema/plugin.config.schema.json",
+  "title": "Lexicon plugin config.json",
+  "description": "Schema for a Lexicon plugin manifest. Mirrors https://www.lexicondj.com/docs/developers/plugin",
+  "type": "object",
+  "required": ["id", "author", "actions"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Plugin identifier. Convention in this repo: <github-username>.<plugin-name>",
+      "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$",
+      "minLength": 3
+    },
+    "author": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "discordUsername": { "type": "string" },
+        "email": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/action" }
+    }
+  },
+  "additionalProperties": true,
+
+  "definitions": {
+    "trackField": {
+      "type": "string",
+      "enum": [
+        "title", "artist", "albumTitle", "label", "remixer", "mix", "composer",
+        "producer", "grouping", "lyricist", "comment", "key", "genre", "bpm",
+        "rating", "color", "year", "duration", "bitrate", "playCount",
+        "location", "lastPlayed", "dateAdded", "trackNumber", "energy",
+        "danceability", "popularity", "happiness", "extra1", "extra2",
+        "streamingService", "streamingId", "tags", "tempomarkers", "cuepoints",
+        "beatshiftCase", "archived", "incoming", "type", "data"
+      ]
+    },
+
+    "scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "enum": ["all", "selected"] }
+    },
+
+    "action": {
+      "type": "object",
+      "required": ["id", "name", "description", "config"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Must exactly match a .js file next to config.json (without the extension).",
+          "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+        },
+        "name": { "type": "string", "minLength": 1 },
+        "description": {
+          "type": "string",
+          "minLength": 10,
+          "description": "Shown to users before they run the action. Say what it changes."
+        },
+        "config": { "$ref": "#/definitions/actionConfig" }
+      },
+      "additionalProperties": false
+    },
+
+    "actionConfig": {
+      "type": "object",
+      "required": ["permissions"],
+      "properties": {
+        "permissions": { "$ref": "#/definitions/permissions" },
+        "settings": {
+          "type": "object",
+          "description": "User-editable settings. Values arrive in _settings as strings.",
+          "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+        },
+        "allowParallel": { "type": "boolean" },
+        "exclusive": { "type": "boolean" },
+        "confirmationMessage": { "type": "string" },
+        "silent": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "track": {
+          "type": "object",
+          "properties": {
+            "read": { "$ref": "#/definitions/scope" },
+            "modify": { "$ref": "#/definitions/scope" },
+            "modifyFields": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "$ref": "#/definitions/trackField" }
+            },
+            "create": { "type": "boolean" },
+            "delete": { "type": "boolean" }
+          },
+          "additionalProperties": false,
+          "dependencies": {
+            "modify": ["modifyFields"]
+          }
+        },
+        "playlist": {
+          "type": "object",
+          "properties": {
+            "read": { "$ref": "#/definitions/scope" },
+            "modify": { "$ref": "#/definitions/scope" },
+            "modifyFields": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": ["name", "tracks", "smartlist", "parentId", "position"]
+              }
+            },
+            "create": { "type": "boolean" },
+            "delete": { "type": "boolean" }
+          },
+          "additionalProperties": false,
+          "dependencies": {
+            "modify": ["modifyFields"]
+          }
+        },
+        "customTag": {
+          "type": "object",
+          "properties": {
+            "read": { "type": "array", "items": { "type": "string", "enum": ["all"] } },
+            "modify": { "type": "array", "items": { "type": "string", "enum": ["all"] } },
+            "create": { "type": "boolean" },
+            "delete": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "network": {
+          "type": "object",
+          "description": "Domains this action may reach. Reviewed by hand on every PR.",
+          "properties": {
+            "GET": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            },
+            "POST": {
+              "type": "array",
+              "items": { "type": "string", "minLength": 1 }
+            }
+          },
+          "additionalProperties": false
+        },
+        "control": { "type": "boolean" },
+        "silent": { "type": "boolean" },
+        "storage": { "type": "boolean" },
+        "files": {
+          "type": "object",
+          "properties": {
+            "write": { "type": "boolean" },
+            "list": { "type": "boolean" },
+            "read": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

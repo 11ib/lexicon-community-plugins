@@ -1,0 +1,136 @@
+{
+  "id": "harness.conformance",
+  "author": {
+    "name": "Lexicon Plugin Harness"
+  },
+  "actions": [
+    {
+      "id": "probe.env",
+      "name": "Probe 1: Environment",
+      "description": "Dumps which globals and language features exist in the plugin sandbox. Read-only.",
+      "config": {
+        "permissions": {
+          "files": {
+            "write": true
+          }
+        }
+      }
+    },
+    {
+      "id": "probe.vars",
+      "name": "Probe 2: Vars And Object Shapes",
+      "description": "Dumps the shape of _vars, track objects, playlist objects and custom tags. Read-only.",
+      "config": {
+        "permissions": {
+          "track": {
+            "read": [
+              "selected"
+            ]
+          },
+          "playlist": {
+            "read": [
+              "all"
+            ]
+          },
+          "customTag": {
+            "read": [
+              "all"
+            ]
+          },
+          "files": {
+            "write": true
+          }
+        }
+      }
+    },
+    {
+      "id": "probe.batching",
+      "name": "Probe 3: Track Batching",
+      "description": "Calls getNextAllBatch a few times to learn the batch size. Read-only.",
+      "config": {
+        "permissions": {
+          "track": {
+            "read": [
+              "all"
+            ]
+          },
+          "files": {
+            "write": true
+          }
+        }
+      }
+    },
+    {
+      "id": "probe.storage",
+      "name": "Probe 4: Storage Round Trip",
+      "description": "Saves and loads several value types to learn what storage preserves. Touches only plugin storage.",
+      "config": {
+        "permissions": {
+          "storage": true,
+          "files": {
+            "write": true
+          }
+        }
+      }
+    },
+    {
+      "id": "probe.settings",
+      "name": "Probe 5: Settings Coercion",
+      "description": "Reports the runtime type of each declared setting. Read-only.",
+      "config": {
+        "permissions": {
+          "files": {
+            "write": true
+          }
+        },
+        "settings": {
+          "AString": "hello",
+          "ANumber": "123",
+          "ABool": "true",
+          "AnEmpty": ""
+        }
+      }
+    },
+    {
+      "id": "probe.denied",
+      "name": "Probe 6: Permission Denial",
+      "description": "Deliberately touches capabilities this action was NOT granted, and records how each one fails. Read-only.",
+      "config": {
+        "permissions": {
+          "track": {
+            "read": [
+              "selected"
+            ]
+          },
+          "files": {
+            "write": true
+          }
+        }
+      }
+    },
+    {
+      "id": "probe.writefields",
+      "name": "Probe 7: Modify Field Enforcement",
+      "description": "Writes to a permitted field (extra1) and a non-permitted field (extra2) on the SELECTED tracks. Select only tracks from the ZZ Plugin Harness Sandbox playlist before running.",
+      "config": {
+        "permissions": {
+          "track": {
+            "read": [
+              "selected"
+            ],
+            "modify": [
+              "selected"
+            ],
+            "modifyFields": [
+              "extra1"
+            ]
+          },
+          "files": {
+            "write": true
+          }
+        },
+        "confirmationMessage": "This writes to extra1/extra2 on your SELECTED tracks. Only run with the sandbox playlist tracks selected."
+      }
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "fixture.bad",
+  "author": { "name": "Fixture" },
+  "actions": [
+    {
+      "id": "bad.action",
+      "name": "Bad Action",
+      "description": "Deliberately violates its own manifest. Used by the tooling tests.",
+      "config": {
+        "permissions": {
+          "track": { "read": ["selected"], "modify": ["selected"], "modifyFields": ["rating"] },
+          "storage": true
+        }
+      }
+    }
+  ]
+}

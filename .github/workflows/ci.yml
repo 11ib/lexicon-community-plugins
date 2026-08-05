@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Lexicon's parser is stricter than Node's. A plugin that violates these
+      # rules fails to load in the app, so this gate comes first.
+      - name: Sandbox lint
+        run: npm run lint
+
+      - name: Validate plugin manifests
+        run: npm run validate
+
+      - name: Check permissions match code
+        run: npm run check:permissions
+
+      - name: Test
+        run: npm test
+
+      - name: Build plugin ZIPs
+        run: npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: plugin-zips
+          path: dist/*.zip
