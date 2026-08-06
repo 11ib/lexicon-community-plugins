@@ -44,17 +44,22 @@ The permission check reports two kinds of problem:
 
 Plugins run inside other people's libraries. Ask for as little as possible.
 
-**Permissions are not a sandbox.** Probing a real Lexicon showed that most
-capabilities stay callable regardless of what `config.json` declares — an action
-granted only `track.read` still sees working functions for `playlist.create`,
-`_storage.save`, `_network.GET`, `_files.read` and `_ui.control`. Only certain
-scope-gated read accessors are actually withheld, and a denied read returns
-`null` rather than raising.
+**Lexicon does enforce capability calls.** Calling a method you didn't declare
+fails loudly with `Missing required "storage" permission` and stops the action,
+verified against a real install. So the manifest is a genuine runtime boundary
+for anything a plugin *does*.
 
-So the manifest is a **statement of intent to reviewers**, not an enforced
-boundary. Review what the code *does*, not what it *declares*. `npm run
-check:permissions` flags mismatches in both directions, but a reviewer reading
-the diff is the real control.
+Two gaps are worth knowing as a reviewer:
+
+- **Reads fail silently.** An ungranted `_vars` read returns `null` rather than
+  raising, so a plugin with a wrong read permission quietly does nothing instead
+  of reporting a problem.
+- **`modifyFields` isn't enforced at write time.** Writes to undeclared fields
+  are accepted in memory and silently discarded on save. This is the one that
+  ships broken.
+
+`npm run check:permissions` flags mismatches in both directions, but read the
+diff — narrow permissions are still the thing to insist on.
 
 **Reviewed closely on every PR:**
 

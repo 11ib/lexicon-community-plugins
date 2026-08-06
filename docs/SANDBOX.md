@@ -477,23 +477,32 @@ the exact manifest line to add, because a test that silently passes over a
 `null` is worthless. `npm run check:permissions` catches the same mistakes
 statically.
 
-### Permissions are not a sandbox boundary
+### Method calls ARE enforced
 
-Most methods stay **callable regardless of the manifest**. An action granted
-only `track.read: ["selected"]` still sees real functions for:
+Ungranted methods are still **present** — `typeof _storage.save` is `"function"`
+even without the `storage` permission — so you cannot feature-detect a
+capability with `typeof`. But *calling* one is refused, loudly:
 
 ```
-_library.track.create      _library.track.delete
-_library.playlist.create   _storage.save
-_network.GET               _files.read / _files.list
-_ui.control
+Missing required "storage" permission
+Execution failed: Missing required "storage" permission
 ```
 
-Only the scope-gated read accessors were swapped out. Whether calling one of
-these actually performs the write is still being probed — but until that's
-settled, **treat `config.json` permissions as declarative intent for reviewers,
-not as a security boundary.** Review contributed code on what it *does*, not on
-what it *declares*.
+The error is logged, shown to the user, and terminates the action. Verified
+non-destructively: an action holding only `track.read` called `_storage.save`,
+was stopped there, and the unauthorised `_library.playlist.create` later in the
+same script never ran — no playlist was created.
+
+So there are three distinct behaviours, and it's worth keeping them straight:
+
+| What you touch without permission | What happens |
+| --- | --- |
+| A `_vars` read | Returns `null`. Silent. Execution continues. |
+| A scope-gated accessor like `getNextAllBatch` | Replaced by a non-callable object → `TypeError` |
+| Any capability method call | `Missing required "X" permission`, action terminates |
+| A field outside `modifyFields` | **Silently discarded at save time** |
+
+Only the last one is genuinely invisible — and it's the one most likely to ship.
 
 ---
 

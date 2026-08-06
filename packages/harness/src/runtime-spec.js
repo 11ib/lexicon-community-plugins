@@ -65,17 +65,25 @@ export const RUNTIME_SPEC = {
   // is worthless.
   permissionDenialMode: { value: 'null-and-missing-accessors', source: 'probe' },
 
-  // IMPORTANT and unresolved: most _library / _storage / _network / _ui methods
-  // remain CALLABLE regardless of the manifest. An action granted only
-  // track.read: ["selected"] still sees functions for track.create,
-  // track.delete, playlist.create, _storage.save, _network.GET, _files.read,
-  // _files.list and _ui.control.
+  // Method CALLS are properly enforced. Ungranted methods are still present as
+  // functions — typeof _storage.save is "function" without the storage
+  // permission — so you cannot feature-detect a capability with typeof. But
+  // calling one raises a clear, logged error and terminates the action:
   //
-  // Only the read accessors gated by scope were swapped out. Whether calling an
-  // ungranted method actually performs the write has NOT been established — the
-  // probes never got that far. Until it is, treat config.json permissions as
-  // declarative intent for reviewers, NOT as a security boundary.
-  ungrantedMethodsStillCallable: { value: true, source: 'probe' },
+  //   Missing required "storage" permission
+  //   Execution failed: Missing required "storage" permission
+  //
+  // Verified non-destructively: an action holding only track.read called
+  // _storage.save and was stopped, and the unauthorised _library.playlist.create
+  // later in the same script never ran — no playlist was created.
+  //
+  // So permissions ARE a real boundary for capability calls, and the harness's
+  // strict PermissionError mirrors the app rather than merely being stricter.
+  //
+  // Not yet probed individually: _files.read / _files.list / _library.playlist.
+  // create. The error string looks like a uniform gate, but that is inference.
+  methodCallsAreEnforced: { value: true, source: 'probe' },
+  ungrantedMethodsArePresentButThrow: { value: true, source: 'probe' },
 
   // Some failures still terminate the script where it stands, with no log
   // entry, no error, and no chance to react. Confirmed for a `try` block whose
