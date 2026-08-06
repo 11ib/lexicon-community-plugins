@@ -60,7 +60,12 @@
           "description": "Must exactly match a .js file next to config.json (without the extension).",
           "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
         },
-        "name": { "type": "string", "minLength": 1 },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "User-visible action name. Lexicon rejects the whole plugin if this contains anything outside letters, numbers, dots, spaces, dash and underscore — a colon or slash is enough to break it.",
+          "pattern": "^[a-zA-Z0-9. _-]+$"
+        },
         "description": {
           "type": "string",
           "minLength": 10,

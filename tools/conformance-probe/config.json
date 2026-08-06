@@ -6,7 +6,7 @@
   "actions": [
     {
       "id": "syn.nullish",
-      "name": "R2-1: Syntax - Nullish Coalescing",
+      "name": "R2-1 Syntax Nullish Coalescing",
       "description": "Tests whether the ?? operator parses. Writes syn-nullish.json on success.",
       "config": {
         "permissions": {
@@ -18,7 +18,7 @@
     },
     {
       "id": "syn.common",
-      "name": "R2-2: Syntax - Template/Destructure/Spread/Defaults",
+      "name": "R2-2 Syntax Template Destructure Spread Defaults",
       "description": "Tests four common modern syntax features together. Writes syn-common.json on success.",
       "config": {
         "permissions": {
@@ -30,7 +30,7 @@
     },
     {
       "id": "syn.static",
-      "name": "R2-3: Syntax - Static Built-in Access",
+      "name": "R2-3 Syntax Static Built-in Access",
       "description": "Tests which Object/Array static helpers the sandbox allows. Writes syn-static.json on success.",
       "config": {
         "permissions": {
@@ -42,7 +42,7 @@
     },
     {
       "id": "syn.nestedcatch",
-      "name": "R2-4: Syntax - try/catch Inside A Function",
+      "name": "R2-4 Syntax try-catch Inside A Function",
       "description": "Tests whether a catch binding works inside a nested function. Writes syn-nestedcatch.json on success.",
       "config": {
         "permissions": {
@@ -54,7 +54,7 @@
     },
     {
       "id": "env.shapes",
-      "name": "R2-5: Object Shapes",
+      "name": "R2-5 Object Shapes",
       "description": "Dumps the shape of _vars, tracks, playlists and custom tags. Read-only. Select the sandbox tracks first.",
       "config": {
         "permissions": {
@@ -81,7 +81,7 @@
     },
     {
       "id": "perm.denied",
-      "name": "R2-6: Permission Denial",
+      "name": "R2-6 Permission Denial",
       "description": "Touches capabilities this action was NOT granted and records how each fails. Read-only.",
       "config": {
         "permissions": {
@@ -98,7 +98,7 @@
     },
     {
       "id": "set.dump",
-      "name": "R2-7: Settings Coercion",
+      "name": "R2-7 Settings Coercion",
       "description": "Reports the runtime type of each declared setting. Read-only.",
       "config": {
         "permissions": {

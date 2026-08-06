@@ -13,14 +13,15 @@
 // through the common binding patterns to check field writes.
 
 import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
-import { join, dirname } from 'node:path'
+import { join, dirname, isAbsolute } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import * as espree from 'espree'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-// Overridable so the tooling tests can point at tests/fixtures/.
+// Overridable so the tooling tests can point at a fixture tree. Accepts either
+// a path relative to the repo root or an absolute one.
 const PLUGINS_DIR = process.env.PLUGINS_DIR
-  ? join(ROOT, process.env.PLUGINS_DIR)
+  ? (isAbsolute(process.env.PLUGINS_DIR) ? process.env.PLUGINS_DIR : join(ROOT, process.env.PLUGINS_DIR))
   : join(ROOT, 'plugins')
 
 const TRACK_FIELDS = new Set([

@@ -120,6 +120,39 @@ generated or minified code regardless.
 
 ---
 
+## Manifest restrictions
+
+**Action `name` accepts only letters, numbers, dots, spaces, dash and
+underscore.** (probed)
+
+A single stray character takes down the **entire plugin** — every action in it —
+at load time:
+
+```
+Some plugin(s) failed to load.
+DEVELOPMENT conformance-probe: invalid config: action "name" property may only
+contain characters a-z, numbers, dots, spaces, dash and underscore.
+```
+
+The message doesn't say which action is at fault, so on a plugin with a dozen
+actions you're bisecting by hand. Characters that look harmless but break it:
+
+| Rejected | Example |
+| --- | --- |
+| `:` colon | `Probe 1: Environment` |
+| `/` slash | `Syntax try/catch` |
+| `()` parentheses | `Rename Playlists (fast)` |
+| `&` ampersand | `Drum & Bass Tagger` |
+| emoji | `Tag Tracks 🚀` |
+
+`npm run validate` enforces this, so CI catches it before you spend a restart
+cycle on it.
+
+Note this applies to the action `name` (what the user sees in the menu), not the
+action `id` — ids with dots like `energy.to.rating` are fine.
+
+---
+
 ## The silent failure you need to know about
 
 **Writes to fields outside `modifyFields` are silently discarded.**
