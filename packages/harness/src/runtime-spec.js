@@ -37,17 +37,38 @@ export const RUNTIME_SPEC = {
   // comes back as a string. Anything relying on Date methods must re-wrap it.
   storagePreservesDates: { value: false, source: 'probe' },
 
-  // Docs say settings are always delivered as strings.
-  settingsAreStrings: { value: true, source: 'docs' },
+  // Every setting arrives as a string, including ones declared as numbers or
+  // booleans in config.json. An empty setting is '' rather than null.
+  settingsAreStrings: { value: true, source: 'probe' },
 
   // What _settings[key] gives for a key not declared in config.json.
-  settingsMissingValue: { value: undefined, source: 'guess' },
+  settingsMissingValue: { value: undefined, source: 'probe' },
 
   // How Lexicon reacts to touching an ungranted capability:
   //   'throw'   — raises an error the action can catch
-  //   'silent'  — returns undefined / no-ops
+  //   'halt'    — execution stops dead, silently, uncatchable
+  //   'silent'  — returns undefined / no-ops but execution continues
   //   'none'    — not enforced at runtime at all
-  permissionDenialMode: { value: 'throw', source: 'guess' },
+  //
+  // Strong evidence for 'halt', pending one more probe: an action granted only
+  // track.read touched _vars.playlistsAll and simply stopped after 3ms — no
+  // error logged, no exception, and the remaining statements never ran.
+  // See sandboxHaltsSilently below.
+  permissionDenialMode: { value: 'halt', source: 'probe-pending' },
+
+  // The most dangerous property of this sandbox: some guard violations do not
+  // throw, they terminate the script where it stands. Nothing is written to
+  // the plugin log, no error surfaces to the user, and a surrounding
+  // try/catch does NOT run. The action simply stops, and Lexicon reports the
+  // run as having completed.
+  //
+  // Observed for: a denied capability access, and at least one blocked static
+  // built-in. Suspected for assignment to an injected global.
+  //
+  // Practical consequence for plugin authors: you cannot defend against this
+  // at runtime. The only defence is not writing the offending code, which is
+  // what the lint rules and the permission checker are for.
+  sandboxHaltsSilently: { value: true, source: 'probe' },
 
   // How a write to a field outside modifyFields behaves.
   //   'throw'   — assignment raises
@@ -82,14 +103,24 @@ export const SANDBOX_PARSER_FACTS = {
   // The ternary ?: operator itself is fine — it is specifically ?. that breaks.
   optionalChaining: { supported: false, source: 'probe' },
 
+  // `a ?? b` fails the same way: Unexpected token after inlineIf: ?: ? "0"
+  nullishCoalescing: { supported: false, source: 'probe' },
+
+  // `function f(value = 'x')` fails with:
+  //   Unexpected token after prop: w: function withDefault(value = "0")
+  // Assign fallbacks in the function body instead. Destructuring defaults use
+  // the same AST node and are assumed to fail too.
+  defaultParameters: { supported: false, source: 'probe' },
+
   // `Object.prototype.hasOwnProperty.call(x, k)` and comparisons against
   // Object.prototype fail with:
   //   Static method or property access not permitted: Object.prototype
   objectPrototypeAccess: { supported: false, source: 'probe' },
 
-  // A catch binding inside a nested function declaration failed with
-  // "err is not defined", while a top-level try/catch works. Being confirmed.
-  catchInsideNestedFunction: { supported: false, source: 'probe-pending' }
+  // A catch binding inside a nested function declaration fails with
+  // "err is not defined", while a top-level try/catch works. Reproduced twice,
+  // in two separate probes.
+  catchInsideNestedFunction: { supported: false, source: 'probe' }
 }
 
 // Fields that appear on a track object handed to a plugin, with the defaults a

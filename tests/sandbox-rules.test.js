@@ -96,6 +96,26 @@ describe('undocumented restrictions found by probing', () => {
     expect(ids).not.toContain('no-restricted-syntax')
   })
 
+  it('rejects nullish coalescing', async () => {
+    // Real Lexicon error: Unexpected token after inlineIf: ?: ? "0"
+    await expectRejected('const v = null ?? "fallback"\n_helpers.Log(v)', 'nullish coalescing')
+  })
+
+  it('rejects default parameter values', async () => {
+    // Real Lexicon error: Unexpected token after prop: w: function withDefault(value = "0")
+    await expectRejected(
+      'function f(value = "x") {\n  return value\n}\n_helpers.Log(f())',
+      'default values in parameters'
+    )
+  })
+
+  it('rejects destructuring defaults too, which share the same syntax node', async () => {
+    await expectRejected(
+      'const source = { a: 1 }\nconst { a = 2 } = source\n_helpers.Log(String(a))',
+      'default values in parameters'
+    )
+  })
+
   it('rejects Object.prototype access', async () => {
     // Real Lexicon error: Static method or property access not permitted
     await expectRejected(

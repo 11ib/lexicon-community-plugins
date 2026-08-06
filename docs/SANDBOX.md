@@ -47,24 +47,57 @@ dangerous (see below).
 
 ### Undocumented (probed)
 
-**Optional chaining `?.` does not parse.**
+**Optional chaining `?.` and nullish coalescing `??` do not parse.**
 
 ```
 Execution failed: Unexpected token after inlineIf: ?: ? "71"
+Execution failed: Unexpected token after inlineIf: ?: ? "0"
 ```
 
-The ternary `?:` works fine — it's specifically `?.` that breaks. This is the
-one most likely to bite you, because it's everywhere in modern JavaScript.
+The ternary `?:` works fine — the parser breaks on anything else following a
+`?`. These two are the most likely to bite you, because they're everywhere in
+modern JavaScript.
 
 ```js
 // Breaks the whole action
 const id = playlist?.parent?.id
+const name = playlist.name ?? 'Untitled'
 
 // Works
 let id = null
 
 if (playlist && playlist.parent) {
   id = playlist.parent.id
+}
+
+let name = playlist.name
+
+if (name === null || name === undefined) {
+  name = 'Untitled'
+}
+```
+
+**Default parameter values do not parse.**
+
+```
+Execution failed: Unexpected token after prop: w: function withDefault(value = "0")
+```
+
+This covers destructuring defaults too — same syntax node.
+
+```js
+// Breaks
+function suffix(name, separator = ' - ') {
+  return name + separator
+}
+
+// Works
+function suffix(name, separator) {
+  if (separator === undefined) {
+    separator = ' - '
+  }
+
+  return name + separator
 }
 ```
 
@@ -153,6 +186,62 @@ action `id` — ids with dots like `energy.to.rating` are fine.
 
 ---
 
+## Some failures halt your script silently
+
+Worse than an error: certain guard violations **terminate the action where it
+stands**. Not an exception — execution simply stops.
+
+- nothing is written to the plugin log
+- no error is shown to the user
+- a surrounding `try/catch` does **not** run
+- Lexicon reports the run as completed, with a normal `Execution took Nms`
+
+Observed for a denied capability access and for at least one blocked static
+built-in. A probe granted only `track.read` touched `_vars.playlistsAll`, ran
+for 3ms, logged nothing, and never reached any of its remaining twelve steps.
+
+```js
+// If playlistsAll is not granted, execution stops HERE.
+// The catch never runs. The report never happens. Nothing is logged.
+try {
+  const all = _vars.playlistsAll
+} catch (err) {
+  _helpers.Log('this line is unreachable')
+}
+
+_helpers.Report('so is this one')
+```
+
+**You cannot defend against this at runtime.** The only defence is not writing
+the offending code — which is what `npm run lint` and `npm run check:permissions`
+are for. A plugin that asks for the wrong permissions doesn't fail loudly on a
+user's machine; it quietly does part of its job and stops.
+
+### Debugging a probe that vanishes
+
+If an action completes with no error and no visible effect, it halted. To find
+where, write a stage marker after every step:
+
+```js
+const results = { lastCompleted: 'none' }
+
+function save() {
+  _files.write('debug.json', JSON.stringify(results, null, 2))
+}
+
+save()
+
+const all = _vars.playlistsAll
+results.lastCompleted = 'read playlistsAll'
+save()
+```
+
+The last value in the file is the step before the one that killed it. Every
+probe in [`tools/conformance-probe/`](../tools/conformance-probe/) uses this
+pattern.
+
+---
+
 ## The silent failure you need to know about
 
 **Writes to fields outside `modifyFields` are silently discarded.**
@@ -222,17 +311,21 @@ expose `trackIds` until you call `getTrackIds()`.
 
 ## Still unverified
 
-The harness marks these `source: 'guess'` in
+The harness marks these `source: 'guess'` or `'probe-pending'` in
 [`runtime-spec.js`](../packages/harness/src/runtime-spec.js). If you can settle
 one, that's a valuable PR:
 
-- What happens when an action touches a capability it wasn't granted — throw,
-  silent `undefined`, or no enforcement at all? The harness currently assumes it
-  throws.
-- What `_settings[key]` returns for a key not declared in `config.json`.
+- Exactly which static built-ins are blocked. `Object.prototype` is confirmed
+  blocked; one of the others halts a script silently and has not been pinned
+  down yet.
+- Whether `_vars.tracksSelected` is an empty array or `undefined` when nothing
+  is selected.
+- Whether template literals, destructuring and spread parse. Default parameters
+  are confirmed broken; the other three were in the same failed probe and have
+  not been isolated.
+- Whether assigning to an injected global (`_settings['x'] = ...`) is what
+  halts a script silently.
 - Whether `_vars.playlistsAll` is flat or nested.
-- Which modern syntax beyond `?.` the parser rejects (`??`, spread,
-  destructuring, template literals).
 
 [`tools/conformance-probe/`](../tools/conformance-probe/) is the plugin that
 answers these. See its README for how to run it.

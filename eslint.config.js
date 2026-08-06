@@ -48,6 +48,19 @@ const SANDBOX_RULES = {
         'Lexicon\'s parser rejects optional chaining (?.). Use an explicit check: `if (a && a.b)`.'
     },
     {
+      // Real error: Unexpected token after inlineIf: ?: ? "0"
+      // Same parser path as ?. — anything after a `?` that is not a ternary.
+      selector: 'LogicalExpression[operator="??"]',
+      message:
+        'Lexicon\'s parser rejects nullish coalescing (??). Use an explicit check: `if (x === null) { x = fallback }`.'
+    },
+    {
+      // Real error: Unexpected token after prop: w: function withDefault(value = "0")
+      selector: 'AssignmentPattern',
+      message:
+        'Lexicon\'s parser rejects default values in parameters and destructuring. Assign the fallback in the function body instead.'
+    },
+    {
       // Real error: Static method or property access not permitted: Object.prototype
       selector: 'MemberExpression[object.name="Object"][property.name="prototype"]',
       message:

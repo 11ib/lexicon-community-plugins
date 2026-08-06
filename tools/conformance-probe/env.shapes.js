@@ -1,11 +1,23 @@
-// Shapes of the objects Lexicon hands to plugins.
-// Written in confirmed-safe syntax only: no ?., no Object.prototype,
-// no catch bindings inside nested functions.
+// R3: shapes of the objects Lexicon hands to plugins.
+//
+// Round 2 died on "Cannot get property 'length' of undefined" reading
+// _vars.tracksSelected, so this version guards every access and records stages.
+// Run it once WITH sandbox tracks selected. If tracksSelected is undefined
+// rather than an empty array when nothing is selected, that itself matters —
+// plugins would need a guard the docs never mention.
 
-const results = { probe: 'env.shapes' }
+const results = { probe: 'env.shapes.r3', lastCompleted: 'none' }
+
+function save() {
+  _files.write('env-shapes.json', JSON.stringify(results, null, 2))
+}
 
 results.ranAt = new Date().toISOString()
+save()
+
 results.varsKeys = Object.keys(_vars)
+results.lastCompleted = 'varsKeys'
+save()
 
 results.globals = [
   { name: 'require', type: typeof require },
@@ -16,28 +28,29 @@ results.globals = [
   { name: 'console', type: typeof console },
   { name: 'fetch', type: typeof fetch },
   { name: 'setTimeout', type: typeof setTimeout },
-  { name: 'eval', type: typeof eval },
   { name: 'Symbol', type: typeof Symbol },
   { name: 'Map', type: typeof Map },
   { name: 'Set', type: typeof Set },
   { name: 'Proxy', type: typeof Proxy },
-  { name: 'Intl', type: typeof Intl },
   { name: 'structuredClone', type: typeof structuredClone },
-  { name: 'atob', type: typeof atob },
-  { name: 'URL', type: typeof URL },
-  { name: 'BigInt', type: typeof BigInt },
-  { name: 'undefined', type: typeof undefined },
-  { name: 'NaN', type: typeof NaN },
-  { name: 'Infinity', type: typeof Infinity }
+  { name: 'URL', type: typeof URL }
 ]
+
+results.lastCompleted = 'globals'
+save()
 
 // --- tracks --------------------------------------------------------------
 
 const selected = _vars.tracksSelected
 
-results.selectedCount = selected.length
+results.tracksSelectedType = typeof selected
+results.tracksSelectedIsUndefined = selected === undefined
+results.tracksSelectedIsArray = Array.isArray(selected)
+results.selectedCount = Array.isArray(selected) ? selected.length : null
+results.lastCompleted = 'tracksSelected-type'
+save()
 
-if (selected.length > 0) {
+if (Array.isArray(selected) && selected.length > 0) {
   const track = selected[0]
 
   results.trackKeys = Object.keys(track)
@@ -48,8 +61,8 @@ if (selected.length > 0) {
   }
 
   results.trackJson = JSON.parse(JSON.stringify(track))
-  results.trackHasGetters = typeof track.getTags
-  results.trackCuepointSample = null
+  results.lastCompleted = 'track-shape'
+  save()
 
   if (Array.isArray(track.cuepoints) && track.cuepoints.length > 0) {
     results.trackCuepointSample = track.cuepoints[0]
@@ -58,28 +71,38 @@ if (selected.length > 0) {
   if (Array.isArray(track.tempomarkers) && track.tempomarkers.length > 0) {
     results.trackTempomarkerSample = track.tempomarkers[0]
   }
+
+  results.lastCompleted = 'track-nested'
+  save()
 }
 
 // --- playlists -----------------------------------------------------------
 
 const playlists = _vars.playlistsAll
 
-results.playlistCount = playlists.length
-results.playlistsWithNestedChildren = 0
+results.playlistsAllType = typeof playlists
+results.playlistCount = Array.isArray(playlists) ? playlists.length : null
+results.lastCompleted = 'playlistsAll-type'
+save()
 
-for (const item of playlists) {
-  if (Array.isArray(item.playlists)) {
-    results.playlistsWithNestedChildren += 1
+if (Array.isArray(playlists) && playlists.length > 0) {
+  results.playlistsWithNestedChildren = 0
+
+  for (const item of playlists) {
+    if (Array.isArray(item.playlists)) {
+      results.playlistsWithNestedChildren += 1
+    }
   }
-}
 
-let target = playlists.find(x => x.name === 'ZZ Plugin Harness Sandbox')
+  results.lastCompleted = 'playlist-nesting'
+  save()
 
-if (!target) {
-  target = playlists[0]
-}
+  let target = playlists.find(x => x.name === 'ZZ Plugin Harness Sandbox')
 
-if (target) {
+  if (!target) {
+    target = playlists[0]
+  }
+
   results.playlistProbeName = target.name
   results.playlistKeys = Object.keys(target)
   results.playlistTypes = []
@@ -91,6 +114,8 @@ if (target) {
   results.getTrackIdsType = typeof target.getTrackIds
   results.getTracksType = typeof target.getTracks
   results.trackIdsPropertyBeforeCall = typeof target.trackIds
+  results.lastCompleted = 'playlist-shape'
+  save()
 
   const idsCall = target.getTrackIds()
 
@@ -100,10 +125,12 @@ if (target) {
   const ids = await idsCall
 
   results.idsIsArray = Array.isArray(ids)
-  results.idsLength = ids.length
-  results.idsSample = ids.slice(0, 5)
-  results.idsFirstType = ids.length > 0 ? typeof ids[0] : null
+  results.idsLength = Array.isArray(ids) ? ids.length : null
+  results.idsSample = Array.isArray(ids) ? ids.slice(0, 5) : null
+  results.idsFirstType = Array.isArray(ids) && ids.length > 0 ? typeof ids[0] : null
   results.trackIdsPropertyAfterCall = typeof target.trackIds
+  results.lastCompleted = 'getTrackIds'
+  save()
 
   const tracksCall = target.getTracks()
 
@@ -112,33 +139,40 @@ if (target) {
 
   const tracks = await tracksCall
 
-  results.tracksLength = tracks.length
-  results.tracksFirstKeys = tracks.length > 0 ? Object.keys(tracks[0]) : null
+  results.tracksLength = Array.isArray(tracks) ? tracks.length : null
+  results.tracksFirstKeys = Array.isArray(tracks) && tracks.length > 0 ? Object.keys(tracks[0]) : null
+  results.lastCompleted = 'getTracks'
+  save()
 }
 
 // --- custom tags ---------------------------------------------------------
 
 const tags = _vars.customTags
 
-results.customTagCount = tags.length
+results.customTagsType = typeof tags
+results.customTagCount = Array.isArray(tags) ? tags.length : null
 
-if (tags.length > 0) {
+if (Array.isArray(tags) && tags.length > 0) {
   results.customTagKeys = Object.keys(tags[0])
   results.customTagSample = JSON.parse(JSON.stringify(tags[0]))
 }
 
+results.lastCompleted = 'customTags'
+save()
+
 const categories = _vars.customTagsCategories
 
-results.customTagCategoryCount = categories.length
+results.customTagCategoryCount = Array.isArray(categories) ? categories.length : null
 
-if (categories.length > 0) {
+if (Array.isArray(categories) && categories.length > 0) {
   results.customTagCategoryKeys = Object.keys(categories[0])
   results.customTagCategorySample = JSON.parse(JSON.stringify(categories[0]))
 }
 
-_files.write('env-shapes.json', JSON.stringify(results, null, 2))
+results.lastCompleted = 'customTagCategories'
+results.finished = true
+save()
 
-_helpers.Report('_vars keys: ' + results.varsKeys.join(', '))
 _helpers.Report('Selected tracks: ' + results.selectedCount)
 _helpers.Report('Playlists: ' + results.playlistCount)
 _helpers.Report('Custom tags: ' + results.customTagCount)
