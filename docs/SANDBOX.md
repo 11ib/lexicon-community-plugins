@@ -12,6 +12,21 @@ tested in [`tests/sandbox-rules.test.js`](../tests/sandbox-rules.test.js).
 
 ---
 
+## This is not V8
+
+The single most useful thing to understand: plugin JavaScript does **not** run
+in a normal JavaScript engine. Lexicon parses and interprets it itself.
+
+That one fact explains nearly everything on this page — why the parser rejects
+syntax your editor accepts, why `try/catch` doesn't bind, why block scope is
+flat, why some built-ins are stubbed, and why a guard can report
+`typeof x === 'object' && x !== null` and then have `Object.keys(x)` fail with
+"Cannot convert undefined or null to object" on the very next line.
+
+Write plainly. Anything clever is a coin flip.
+
+---
+
 ## The execution model
 
 An action file is **not a module**. It's a bare async function body. Lexicon
@@ -195,13 +210,27 @@ if (b) {
 }
 ```
 
-**`Object.assign` is blocked**, alongside `Object.prototype`:
+**Two statics are blocked, and two more are silently stubbed.**
+
+`Object.prototype` and `Object.assign` raise a real error:
 
 ```
 Execution failed: Static method or property access not permitted: Object.assign
 ```
 
-`Object.keys`, `Object.values` and `Object.entries` all work.
+Worse, `Object.freeze` and `Object.getPrototypeOf` **return `undefined`** with no
+error at all — so `const frozen = Object.freeze(obj)` hands you `undefined` and
+the failure surfaces somewhere else entirely.
+
+Everything else probed works normally: `Object.keys` / `values` / `entries` /
+`fromEntries` / `getOwnPropertyNames`, `Array.isArray` / `from`,
+`Number.isFinite` / `parseFloat`, `Math.*`, `JSON.parse` / `stringify`,
+`Date.now`, `new Date`, `String.fromCharCode`, `Promise.resolve` / `all`,
+`new RegExp`.
+
+**Loop variables are exempt from the scope collision.** Two sequential
+`for (const item of ...)` loops both run fine — the flattening applies to block
+bodies, not loop heads. That's why the lint rule doesn't flag them.
 
 ### Environment
 
@@ -449,17 +478,16 @@ mistakes statically.
 
 ## Still unverified
 
-The harness marks these `source: 'guess'` in
+Marked `source: 'guess'` in
 [`runtime-spec.js`](../packages/harness/src/runtime-spec.js). If you can settle
 one, that's a valuable PR:
 
-- Which static built-ins past `Object.assign` are blocked — the probe died on
-  it before reaching the rest.
-- Whether two `for` loops reusing the same variable name collide under
-  flattened scope. If they do, `for (const track of ...)` twice in one action is
-  illegal, which would affect nearly every real plugin. The lint rule
-  deliberately does not flag loop variables until this is settled.
+- The exact value a denied `_vars` read returns. It reports as a non-null
+  object, but `Object.keys` on it throws "Cannot convert undefined or null to
+  object" — the two facts are contradictory in real JavaScript. The practical
+  behaviour is already known: iterating it finds nothing.
 - The shape of a custom tag category object.
+- Whether `_settings` values are ever anything but strings.
 
 [`tools/conformance-probe/`](../tools/conformance-probe/) is the plugin that
 answers these. See its README for how to run it.

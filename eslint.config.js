@@ -180,10 +180,22 @@ const SANDBOX_RULES = {
     },
     {
       // Real error: Static method or property access not permitted: Object.assign
-      // Object.keys / values / entries are all fine.
+      // Object.keys / values / entries / fromEntries are all fine.
       selector: 'MemberExpression[object.name="Object"][property.name="assign"]',
       message:
         'Lexicon blocks Object.assign. Copy the properties you need explicitly, or build the object literally.'
+    },
+    {
+      // Worse than blocked: these are stubbed and silently return undefined.
+      // No error, no halt — the failure surfaces somewhere else entirely.
+      selector: 'MemberExpression[object.name="Object"][property.name="freeze"]',
+      message:
+        'Object.freeze is stubbed in Lexicon and returns undefined instead of the object. Remove it.'
+    },
+    {
+      selector: 'MemberExpression[object.name="Object"][property.name="getPrototypeOf"]',
+      message:
+        'Object.getPrototypeOf is stubbed in Lexicon and returns undefined. Check for the properties you need instead.'
     },
     {
       selector: 'MemberExpression[object.name="Array"][property.name="prototype"]',

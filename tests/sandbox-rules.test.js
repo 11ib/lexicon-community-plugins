@@ -198,6 +198,28 @@ _helpers.Log(risky())`,
     )
     expect(ids).not.toContain('no-restricted-syntax')
   })
+
+  it('rejects the stubbed Object.freeze and Object.getPrototypeOf', async () => {
+    // These are worse than blocked: they return undefined with no error at all.
+    await expectRejected('const frozen = Object.freeze({ a: 1 })\n_helpers.Log(String(frozen))', 'stubbed')
+    await expectRejected('const proto = Object.getPrototypeOf({ a: 1 })\n_helpers.Log(String(proto))', 'stubbed')
+  })
+
+  it('allows the many statics that do work', async () => {
+    const ids = await ruleIdsFor(
+      `const fromEntries = Object.fromEntries([['a', 1]])
+const names = Object.getOwnPropertyNames(fromEntries)
+const arr = Array.from([1, 2, 3])
+const finite = Number.isFinite(1)
+const rounded = Math.round(1.5)
+const parsed = JSON.parse('{"a":1}')
+const now = Date.now()
+const when = new Date().toISOString()
+const matches = new RegExp('^a$').test('a')
+_helpers.Log(String(names.length + arr.length + rounded + parsed.a + now) + finite + when + matches)`
+    )
+    expect(ids).not.toContain('no-restricted-syntax')
+  })
 })
 
 describe('flattened block scope', () => {
@@ -227,6 +249,22 @@ if (1) {
 }`,
       'already declared in this action'
     )
+  })
+
+  it('allows two loops sharing a variable name, which does work', async () => {
+    // Probed: two sequential for-of loops both using `item` ran fine. The
+    // flattened-scope collision applies to block bodies, not loop heads —
+    // and flagging this would break nearly every real plugin.
+    const ids = await ruleIdsFor(
+      `for (const item of [1, 2]) {
+  _helpers.Log(String(item))
+}
+
+for (const item of [3, 4]) {
+  _helpers.Log(String(item))
+}`
+    )
+    expect(ids).not.toContain('lexicon/no-duplicate-block-scoped-names')
   })
 
   it('accepts distinct names in sibling blocks', async () => {

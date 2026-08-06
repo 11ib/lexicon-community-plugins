@@ -6,33 +6,9 @@
   },
   "actions": [
     {
-      "id": "syn.static",
-      "name": "R5-1 Remaining Static Built-ins",
-      "description": "The static helpers after Object.assign, which stopped the last probe. Stage markers, no try-catch.",
-      "config": {
-        "permissions": {
-          "files": {
-            "write": true
-          }
-        }
-      }
-    },
-    {
-      "id": "loop.names",
-      "name": "R5-2 Two Loops Sharing A Variable Name",
-      "description": "Tests whether two sequential for-of loops using the same variable name collide under flattened scope.",
-      "config": {
-        "permissions": {
-          "files": {
-            "write": true
-          }
-        }
-      }
-    },
-    {
       "id": "perm.denied",
-      "name": "R5-3 Denied Capability Values",
-      "description": "Records exactly what a denied read returns and which methods are missing. Select the sandbox tracks first.",
+      "name": "R6-1 Denied Capability Values",
+      "description": "Examines a denied capability using only String and JSON, with stage markers. Select the sandbox tracks first.",
       "config": {
         "permissions": {
           "track": {

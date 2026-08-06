@@ -170,10 +170,27 @@ export const SANDBOX_PARSER_FACTS = {
   blockScopeIsolated: { supported: false, source: 'probe' },
 
   // Object.assign is blocked: "Static method or property access not
-  // permitted: Object.assign". Object.keys, Object.values and Object.entries
-  // all work. The remaining built-in statics are still unprobed — the probe
-  // died on Object.assign before reaching them.
-  objectAssign: { supported: false, source: 'probe' }
+  // permitted: Object.assign", same guard as Object.prototype.
+  objectAssign: { supported: false, source: 'probe' },
+
+  // Object.getPrototypeOf and Object.freeze are worse than blocked — they are
+  // STUBBED. No error, no halt: they just return undefined. So
+  // `const frozen = Object.freeze(obj)` silently hands you undefined, and the
+  // failure surfaces somewhere else entirely.
+  objectGetPrototypeOfReturnsUndefined: { supported: false, source: 'probe' },
+  objectFreezeReturnsUndefined: { supported: false, source: 'probe' },
+
+  // Everything else probed works normally: Object.keys / values / entries /
+  // fromEntries / getOwnPropertyNames, Array.isArray / from, Number.isFinite /
+  // parseFloat, Math.*, JSON.parse / stringify, Date.now, new Date,
+  // String.fromCharCode, Promise.resolve / all, new RegExp.
+  commonStaticsWork: { supported: true, source: 'probe' },
+
+  // Loop variables do NOT collide, unlike block-scoped declarations. Two
+  // sequential `for (const item of ...)` loops both ran. So the flattened-scope
+  // rule applies to block bodies, not loop heads — which is why the lint rule
+  // deliberately skips them.
+  loopVariablesCollide: { supported: false, source: 'probe' }
 }
 
 // Fields that appear on a track object handed to a plugin, with the defaults a
