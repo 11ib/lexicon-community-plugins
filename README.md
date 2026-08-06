@@ -107,6 +107,14 @@ Lexicon parses plugin JS more strictly than Node does. These are enforced by
 - No trailing semicolons after loops or closing brackets
 - Explicit object keys — `{ name: name }`, never `{ name }`
 - No `require()`, `import`, `window`, or `document`
+- **No optional chaining (`?.`)** — undocumented, but it breaks the whole action
+- **No `Object.prototype` access** — use `Object.keys(obj).includes(key)`
+- **No `catch` binding inside a nested function** — keep `try/catch` top-level
+
+The last three aren't in the official docs. They were found by probing a real
+Lexicon install. **[`docs/SANDBOX.md`](docs/SANDBOX.md) has the full reference**,
+including the exact error messages and the silent-failure behaviour of
+`modifyFields` that every plugin author should know about.
 
 ### 4. The tests
 
