@@ -156,40 +156,110 @@ describe('undocumented restrictions found by probing', () => {
     )
   })
 
-  it('rejects a catch binding inside a nested function', async () => {
-    // Real Lexicon error: err is not defined
+  it('rejects try/catch anywhere, including at the top level', async () => {
+    // The catch parameter is never bound ("err is not defined"), and renaming
+    // it does not help ("errA is not defined"). Separately, a try block that
+    // does not throw halts the action silently.
+    await expectRejected(
+      'try {\n  throw new Error("x")\n} catch (err) {\n  _helpers.Log(err.message)\n}',
+      'try/catch does not work in Lexicon'
+    )
+  })
+
+  it('rejects try/catch inside a function too', async () => {
     await expectRejected(
       `function risky() {
   try {
-    throw new Error("x")
+    return doThing()
   } catch (err) {
     return err.message
   }
 }
 _helpers.Log(risky())`,
-      'catch binding inside a nested function'
+      'try/catch does not work in Lexicon'
     )
   })
 
-  it('rejects a catch binding inside an arrow function', async () => {
-    await expectRejected(
-      `const risky = () => {
-  try {
-    throw new Error("x")
-  } catch (err) {
-    return err.message
-  }
-}
-_helpers.Log(risky())`,
-      'catch binding inside a nested function'
-    )
-  })
-
-  it('accepts a top-level try/catch, which does work', async () => {
+  it('accepts throwing a plain Error, which is the reliable failure path', async () => {
     const ids = await ruleIdsFor(
-      'try {\n  throw new Error("x")\n} catch (err) {\n  _helpers.Log(err.message)\n}'
+      'if (!_settings["Key"]) {\n  throw new Error("Set a value in the action settings")\n}'
     )
     expect(ids).not.toContain('no-restricted-syntax')
+  })
+
+  it('rejects Object.assign but allows Object.keys, values and entries', async () => {
+    await expectRejected('const merged = Object.assign({}, { a: 1 })\n_helpers.Log(String(merged.a))', 'Object.assign')
+
+    const ids = await ruleIdsFor(
+      'const source = { a: 1 }\n' +
+        '_helpers.Log(String(Object.keys(source).length))\n' +
+        '_helpers.Log(String(Object.values(source).length))\n' +
+        '_helpers.Log(String(Object.entries(source).length))'
+    )
+    expect(ids).not.toContain('no-restricted-syntax')
+  })
+})
+
+describe('flattened block scope', () => {
+  it('rejects the same const name in two sibling blocks', async () => {
+    // Real Lexicon error: Identifier 'value' has already been declared
+    await expectRejected(
+      `if (1) {
+  const value = 'first'
+  _helpers.Log(value)
+}
+
+if (1) {
+  const value = 'second'
+  _helpers.Log(value)
+}`,
+      'already declared in this action'
+    )
+  })
+
+  it('rejects a name reused between a block and the top level', async () => {
+    await expectRejected(
+      `const total = 1
+
+if (1) {
+  const total = 2
+  _helpers.Log(String(total))
+}`,
+      'already declared in this action'
+    )
+  })
+
+  it('accepts distinct names in sibling blocks', async () => {
+    const ids = await ruleIdsFor(
+      `if (1) {
+  const first = 'a'
+  _helpers.Log(first)
+}
+
+if (1) {
+  const second = 'b'
+  _helpers.Log(second)
+}`
+    )
+    expect(ids).not.toContain('lexicon/no-duplicate-block-scoped-names')
+  })
+
+  it('allows the same name in two different function scopes', async () => {
+    // Separate function scopes are genuinely separate; only block scope is flat.
+    const ids = await ruleIdsFor(
+      `function a() {
+  const value = 1
+  return value
+}
+
+function b() {
+  const value = 2
+  return value
+}
+
+_helpers.Log(String(a() + b()))`
+    )
+    expect(ids).not.toContain('lexicon/no-duplicate-block-scoped-names')
   })
 })
 

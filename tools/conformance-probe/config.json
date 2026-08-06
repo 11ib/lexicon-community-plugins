@@ -6,57 +6,21 @@
   },
   "actions": [
     {
-      "id": "dup.catch",
-      "name": "R4-1 Two Catch Blocks Sharing A Name",
-      "description": "Two sibling try-catch blocks both using err. Suspected cause of the silent halts.",
-      "config": {
-        "permissions": {
-          "files": {
-            "write": true
-          }
-        }
-      }
-    },
-    {
-      "id": "uniq.catch",
-      "name": "R4-2 Two Catch Blocks With Distinct Names",
-      "description": "Same shape as R4-1 but with errA and errB. Isolates name collision from try-catch itself.",
-      "config": {
-        "permissions": {
-          "files": {
-            "write": true
-          }
-        }
-      }
-    },
-    {
-      "id": "dup.const",
-      "name": "R4-3 Same Const Name In Sibling Blocks",
-      "description": "Declares const value in two sibling blocks, testing whether block scope is flattened.",
-      "config": {
-        "permissions": {
-          "files": {
-            "write": true
-          }
-        }
-      }
-    },
-    {
-      "id": "try.staticcall",
-      "name": "R4-4 Static Call Inside And Outside Try",
-      "description": "Runs Object.keys on an object literal directly and inside a try block.",
-      "config": {
-        "permissions": {
-          "files": {
-            "write": true
-          }
-        }
-      }
-    },
-    {
       "id": "syn.static",
-      "name": "R4-5 Static Built-in Access",
-      "description": "Eighteen static helpers as plain statements with stage markers and no try-catch.",
+      "name": "R5-1 Remaining Static Built-ins",
+      "description": "The static helpers after Object.assign, which stopped the last probe. Stage markers, no try-catch.",
+      "config": {
+        "permissions": {
+          "files": {
+            "write": true
+          }
+        }
+      }
+    },
+    {
+      "id": "loop.names",
+      "name": "R5-2 Two Loops Sharing A Variable Name",
+      "description": "Tests whether two sequential for-of loops using the same variable name collide under flattened scope.",
       "config": {
         "permissions": {
           "files": {
@@ -67,8 +31,8 @@
     },
     {
       "id": "perm.denied",
-      "name": "R4-6 Permission Denial",
-      "description": "Touches ungranted capabilities as plain statements with stage markers and no try-catch. Select the sandbox tracks first.",
+      "name": "R5-3 Denied Capability Values",
+      "description": "Records exactly what a denied read returns and which methods are missing. Select the sandbox tracks first.",
       "config": {
         "permissions": {
           "track": {

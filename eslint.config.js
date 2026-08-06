@@ -1,5 +1,96 @@
 import js from '@eslint/js'
 
+// Lexicon flattens block scope. Two sibling blocks each declaring `const value`
+// fails with "Identifier 'value' has already been declared" — legal JavaScript
+// everywhere else. No built-in rule covers this, because in real JS it isn't a
+// problem, so it needs a custom one.
+//
+// Loop heads (`for (const track of ...)`) are deliberately NOT checked yet:
+// the collision is confirmed for declarations inside block bodies, and flagging
+// loop variables before probing them would produce false errors.
+const noDuplicateBlockScopedNames = {
+  meta: {
+    type: 'problem',
+    docs: { description: 'Disallow reusing a block-scoped name within one function scope' },
+    schema: []
+  },
+
+  create(context) {
+    // One record of declared names per function scope.
+    const scopes = []
+
+    function enterScope() {
+      scopes.push(new Map())
+    }
+
+    function exitScope() {
+      scopes.pop()
+    }
+
+    function declare(name, node) {
+      const current = scopes[scopes.length - 1]
+
+      if (!current) {
+        return
+      }
+
+      if (current.has(name)) {
+        context.report({
+          node,
+          message: `"${name}" is already declared in this action. Lexicon flattens block scope, so a name reused in a sibling block fails with "Identifier '${name}' has already been declared". Use a distinct name.`
+        })
+        return
+      }
+
+      current.set(name, node)
+    }
+
+    function collectNames(pattern, node) {
+      if (!pattern) {
+        return
+      }
+
+      if (pattern.type === 'Identifier') {
+        declare(pattern.name, node)
+      }
+      // Destructuring is separately banned, so no need to walk patterns.
+    }
+
+    return {
+      Program: enterScope,
+      'Program:exit': exitScope,
+      FunctionDeclaration: enterScope,
+      'FunctionDeclaration:exit': exitScope,
+      FunctionExpression: enterScope,
+      'FunctionExpression:exit': exitScope,
+      ArrowFunctionExpression: enterScope,
+      'ArrowFunctionExpression:exit': exitScope,
+
+      VariableDeclaration(node) {
+        if (node.kind === 'var') {
+          return
+        }
+
+        // Skip loop heads until their behaviour is probed.
+        const parent = node.parent
+
+        if (
+          parent &&
+          (parent.type === 'ForOfStatement' ||
+            parent.type === 'ForInStatement' ||
+            parent.type === 'ForStatement')
+        ) {
+          return
+        }
+
+        for (const declarator of node.declarations) {
+          collectNames(declarator.id, declarator)
+        }
+      }
+    }
+  }
+}
+
 // Globals Lexicon injects into every action script. Declared readonly so that
 // `no-undef` catches typos like `_helper.Log` while still allowing real use.
 const LEXICON_GLOBALS = {
@@ -88,6 +179,13 @@ const SANDBOX_RULES = {
         'Lexicon blocks Object.prototype access. Use `Object.keys(obj).includes(key)` instead of Object.prototype.hasOwnProperty.call.'
     },
     {
+      // Real error: Static method or property access not permitted: Object.assign
+      // Object.keys / values / entries are all fine.
+      selector: 'MemberExpression[object.name="Object"][property.name="assign"]',
+      message:
+        'Lexicon blocks Object.assign. Copy the properties you need explicitly, or build the object literally.'
+    },
+    {
       selector: 'MemberExpression[object.name="Array"][property.name="prototype"]',
       message: 'Lexicon blocks prototype access on built-ins.'
     },
@@ -96,21 +194,19 @@ const SANDBOX_RULES = {
       message: 'Lexicon blocks prototype access on built-ins.'
     },
     {
-      // A catch binding inside a nested function declaration failed at runtime
-      // with "err is not defined", while a top-level try/catch works fine.
-      selector: 'FunctionDeclaration TryStatement > CatchClause[param!=null]',
+      // try/catch is unusable in this sandbox, in two independent ways:
+      //
+      //   1. The catch parameter is never bound. `catch (err)` then touching
+      //      `err` throws "err is not defined". Renaming does not help —
+      //      `catch (errA)` fails with "errA is not defined".
+      //   2. A try block whose body does NOT throw halts the action silently:
+      //      no log, no error, nothing after it runs.
+      //
+      // Validate up front and throw a clear Error instead. A thrown error is
+      // shown to the user, and is the only reliable failure path here.
+      selector: 'TryStatement',
       message:
-        'A catch binding inside a nested function does not work in Lexicon ("err is not defined"). Move the try/catch to the top level of the action.'
-    },
-    {
-      selector: 'FunctionExpression TryStatement > CatchClause[param!=null]',
-      message:
-        'A catch binding inside a nested function does not work in Lexicon. Move the try/catch to the top level of the action.'
-    },
-    {
-      selector: 'ArrowFunctionExpression TryStatement > CatchClause[param!=null]',
-      message:
-        'A catch binding inside a nested function does not work in Lexicon. Move the try/catch to the top level of the action.'
+        'try/catch does not work in Lexicon: the catch parameter is never bound, and a try block that does not throw halts the action silently. Validate inputs up front and throw a clear Error instead.'
     },
     {
       selector: 'ImportDeclaration',
@@ -177,9 +273,17 @@ export default [
       sourceType: 'module',
       globals: LEXICON_GLOBALS
     },
+    plugins: {
+      lexicon: {
+        rules: {
+          'no-duplicate-block-scoped-names': noDuplicateBlockScopedNames
+        }
+      }
+    },
     rules: {
       ...js.configs.recommended.rules,
       ...SANDBOX_RULES,
+      'lexicon/no-duplicate-block-scoped-names': 'error',
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }]
     }
   },

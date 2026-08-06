@@ -131,34 +131,77 @@ const has = Object.prototype.hasOwnProperty.call(obj, key)
 const has = Object.keys(obj).includes(key)
 ```
 
-**A `catch` binding inside a nested function doesn't work.**
+**`try/catch` does not work. At all.**
+
+Two independent failures, both confirmed:
 
 ```
 Execution failed: err is not defined
+Execution failed: errA is not defined
 ```
 
-A top-level `try/catch` works correctly. Inside a function declaration, arrow
-function, or function expression, the catch parameter isn't bound.
+The catch parameter is **never bound**. Renaming it doesn't help — that second
+error came from `catch (errA)`. And separately, a `try` block whose body does
+*not* throw **halts the action silently**: a probe ran
+`Object.keys({a: 1, b: 2}).length` at the top level fine, then ran the identical
+statement inside a `try`, and stopped dead with no error and nothing logged.
 
 ```js
-// Breaks — err is not defined at runtime
-function risky() {
-  try {
-    return doThing()
-  } catch (err) {
-    return err.message
-  }
-}
-
-// Works — keep try/catch at the top level
-let result = null
-
+// Both of these are broken.
 try {
-  result = doThing()
+  doThing()          // if this does not throw, the action halts here
 } catch (err) {
-  _helpers.Log(err.message)
+  _helpers.Log(err.message)   // err is not defined
 }
 ```
+
+**Validate up front and throw instead.** A thrown `Error` *is* shown to the
+user, and it's the only reliable failure path in this sandbox:
+
+```js
+const perStar = Number(_settings['Energy Per Star'])
+
+if (!Number.isFinite(perStar) || perStar <= 0) {
+  throw new Error('"Energy Per Star" must be a positive number')
+}
+```
+
+**Block scope is flattened.**
+
+```
+Execution failed: Identifier 'value' has already been declared
+```
+
+Two sibling blocks declaring the same name collide, which is legal JavaScript
+everywhere else. Every block-scoped name must be unique across the whole action.
+
+```js
+// Breaks
+if (a) {
+  const value = 1
+}
+
+if (b) {
+  const value = 2
+}
+
+// Works — distinct names
+if (a) {
+  const firstValue = 1
+}
+
+if (b) {
+  const secondValue = 2
+}
+```
+
+**`Object.assign` is blocked**, alongside `Object.prototype`:
+
+```
+Execution failed: Static method or property access not permitted: Object.assign
+```
+
+`Object.keys`, `Object.values` and `Object.entries` all work.
 
 ### Environment
 
@@ -272,8 +315,7 @@ Mutating a track or playlist you were *handed* is fine — that's the normal way
 to persist changes. It's assigning to the globals themselves that kills it.
 `npm run lint` rejects this.
 
-Also observed for a denied capability access and at least one blocked static
-built-in, both still being narrowed down.
+A denied capability turned out NOT to halt — see below.
 
 ```js
 // If playlistsAll is not granted, execution stops HERE.
@@ -384,20 +426,39 @@ expose `trackIds` until you call `getTrackIds()`.
 
 ---
 
+## What a denied permission actually does
+
+Not an error. The capability is simply **omitted** from what gets injected:
+
+| You ask for | You get without the permission |
+| --- | --- |
+| `_vars.playlistsAll` | a non-array object with no `length` — iterating finds nothing |
+| `_vars.tracksAllAmount` | `null` |
+| `_library.track.getNextAllBatch()` | `TypeError: getNextAllBatch is not a function` |
+
+So a plugin with the wrong permissions doesn't fail loudly on a user's machine.
+It loops over an empty placeholder, finds nothing, reports success, and does
+nothing at all — or dies on a `TypeError` that never mentions permissions.
+
+The harness is deliberately **stricter**: it throws a `PermissionError` naming
+the exact manifest line to add, because a test that silently passes over an
+empty placeholder is worthless. `npm run check:permissions` catches the same
+mistakes statically.
+
+---
+
 ## Still unverified
 
-The harness marks these `source: 'guess'` or `'probe-pending'` in
+The harness marks these `source: 'guess'` in
 [`runtime-spec.js`](../packages/harness/src/runtime-spec.js). If you can settle
 one, that's a valuable PR:
 
-- **What a denied capability actually does.** Halt is strongly suspected, but
-  the probe that would prove it kept halting for an unrelated reason. The
-  harness currently throws, which is stricter than the app either way.
-- **Which static built-in is blocked**, beyond `Object.prototype`.
-- **Whether repeated `catch (err)` blocks collide.** Two probes halted inside
-  their first of many sibling `try/catch` blocks, all reusing the same
-  parameter name — suggesting the sandbox flattens block scope. If true,
-  ordinary defensive JavaScript is unwritable here.
+- Which static built-ins past `Object.assign` are blocked — the probe died on
+  it before reaching the rest.
+- Whether two `for` loops reusing the same variable name collide under
+  flattened scope. If they do, `for (const track of ...)` twice in one action is
+  illegal, which would affect nearly every real plugin. The lint rule
+  deliberately does not flag loop variables until this is settled.
 - The shape of a custom tag category object.
 
 [`tools/conformance-probe/`](../tools/conformance-probe/) is the plugin that

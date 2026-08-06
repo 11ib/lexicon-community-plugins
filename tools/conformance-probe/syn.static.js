@@ -1,12 +1,11 @@
-// R4: which static built-in halts the action?
+// R5: the static built-ins after Object.assign, which the round 4 probe died on.
+// Object.prototype and Object.assign are known blocked and deliberately absent.
 //
-// No try/catch — a halt is not catchable, and repeated catch blocks are
-// themselves a suspect. Each check is a plain statement followed by a stage
-// marker, with a unique variable name so nothing can collide.
-//
-// lastCompleted names the last helper that WORKED. The next one killed it.
+// No try/catch — it does not work. Each check is a plain statement with a
+// unique name, followed by a stage marker. lastCompleted names the last
+// helper that WORKED; the next one is blocked.
 
-const results = { probe: 'syn.static.r4', lastCompleted: 'start', checks: [] }
+const results = { probe: 'syn.static.r5', lastCompleted: 'start', checks: [] }
 
 function save() {
   _files.write('syn-static.json', JSON.stringify(results, null, 2))
@@ -14,94 +13,94 @@ function save() {
 
 save()
 
-const check0 = Object.keys({ a: 1, b: 2 }).length
-results.checks.push({ name: 'Object.keys', value: check0 })
-results.lastCompleted = 'Object.keys'
-save()
-
-const check1 = Object.values({ a: 1, b: 2 }).length
-results.checks.push({ name: 'Object.values', value: check1 })
-results.lastCompleted = 'Object.values'
-save()
-
-const check2 = Object.entries({ a: 1 }).length
-results.checks.push({ name: 'Object.entries', value: check2 })
-results.lastCompleted = 'Object.entries'
-save()
-
-const check3 = Object.keys(Object.assign({}, { a: 1 }, { b: 2 })).length
-results.checks.push({ name: 'Object.assign', value: check3 })
-results.lastCompleted = 'Object.assign'
-save()
-
-const check4 = Object.fromEntries([['a', 1]]).a
-results.checks.push({ name: 'Object.fromEntries', value: check4 })
+const check0 = Object.fromEntries([['a', 1]]).a
+results.checks.push({ name: 'Object.fromEntries', value: check0 })
 results.lastCompleted = 'Object.fromEntries'
 save()
 
-const check5 = Object.getOwnPropertyNames({ a: 1 }).length
-results.checks.push({ name: 'Object.getOwnPropertyNames', value: check5 })
+const check1 = Object.getOwnPropertyNames({ a: 1 }).length
+results.checks.push({ name: 'Object.getOwnPropertyNames', value: check1 })
 results.lastCompleted = 'Object.getOwnPropertyNames'
 save()
 
-const check6 = typeof Object.getPrototypeOf({ a: 1 })
-results.checks.push({ name: 'Object.getPrototypeOf', value: check6 })
+const check2 = typeof Object.getPrototypeOf({ a: 1 })
+results.checks.push({ name: 'Object.getPrototypeOf', value: check2 })
 results.lastCompleted = 'Object.getPrototypeOf'
 save()
 
-const check7 = typeof Object.freeze({ a: 1 })
-results.checks.push({ name: 'Object.freeze', value: check7 })
+const check3 = typeof Object.freeze({ a: 1 })
+results.checks.push({ name: 'Object.freeze', value: check3 })
 results.lastCompleted = 'Object.freeze'
 save()
 
-const check8 = Array.isArray([1, 2])
-results.checks.push({ name: 'Array.isArray', value: check8 })
+const check4 = Array.isArray([1, 2])
+results.checks.push({ name: 'Array.isArray', value: check4 })
 results.lastCompleted = 'Array.isArray'
 save()
 
-const check9 = Array.from([1, 2, 3]).length
-results.checks.push({ name: 'Array.from', value: check9 })
+const check5 = Array.from([1, 2, 3]).length
+results.checks.push({ name: 'Array.from', value: check5 })
 results.lastCompleted = 'Array.from'
 save()
 
-const check10 = Number.isFinite(1)
-results.checks.push({ name: 'Number.isFinite', value: check10 })
+const check6 = Number.isFinite(1)
+results.checks.push({ name: 'Number.isFinite', value: check6 })
 results.lastCompleted = 'Number.isFinite'
 save()
 
-const check11 = Number.parseFloat('1.5')
-results.checks.push({ name: 'Number.parseFloat', value: check11 })
+const check7 = Number.parseFloat('1.5')
+results.checks.push({ name: 'Number.parseFloat', value: check7 })
 results.lastCompleted = 'Number.parseFloat'
 save()
 
-const check12 = Math.max(1, 2, 3)
-results.checks.push({ name: 'Math.max', value: check12 })
+const check8 = Math.max(1, 2, 3)
+results.checks.push({ name: 'Math.max', value: check8 })
 results.lastCompleted = 'Math.max'
 save()
 
-const check13 = JSON.parse('{"a":1}').a
-results.checks.push({ name: 'JSON.parse', value: check13 })
+const check9 = Math.round(1.5)
+results.checks.push({ name: 'Math.round', value: check9 })
+results.lastCompleted = 'Math.round'
+save()
+
+const check10 = JSON.parse('{"a":1}').a
+results.checks.push({ name: 'JSON.parse', value: check10 })
 results.lastCompleted = 'JSON.parse'
 save()
 
-const check14 = typeof Date.now()
-results.checks.push({ name: 'Date.now', value: check14 })
+const check11 = JSON.stringify({ a: 1 }).length
+results.checks.push({ name: 'JSON.stringify', value: check11 })
+results.lastCompleted = 'JSON.stringify'
+save()
+
+const check12 = typeof Date.now()
+results.checks.push({ name: 'Date.now', value: check12 })
 results.lastCompleted = 'Date.now'
 save()
 
-const check15 = String.fromCharCode(65)
-results.checks.push({ name: 'String.fromCharCode', value: check15 })
+const check13 = String.fromCharCode(65)
+results.checks.push({ name: 'String.fromCharCode', value: check13 })
 results.lastCompleted = 'String.fromCharCode'
 save()
 
-const check16 = typeof Promise.resolve(1)
-results.checks.push({ name: 'Promise.resolve', value: check16 })
+const check14 = typeof Promise.resolve(1)
+results.checks.push({ name: 'Promise.resolve', value: check14 })
 results.lastCompleted = 'Promise.resolve'
 save()
 
-const check17 = new RegExp('^a$').test('a')
-results.checks.push({ name: 'new RegExp', value: check17 })
+const check15 = typeof Promise.all([])
+results.checks.push({ name: 'Promise.all', value: check15 })
+results.lastCompleted = 'Promise.all'
+save()
+
+const check16 = new RegExp('^a$').test('a')
+results.checks.push({ name: 'new RegExp', value: check16 })
 results.lastCompleted = 'new RegExp'
+save()
+
+const check17 = typeof new Date().toISOString()
+results.checks.push({ name: 'new Date', value: check17 })
+results.lastCompleted = 'new Date'
 save()
 
 results.finished = true

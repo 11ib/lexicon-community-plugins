@@ -44,30 +44,34 @@ export const RUNTIME_SPEC = {
   // What _settings[key] gives for a key not declared in config.json.
   settingsMissingValue: { value: undefined, source: 'probe' },
 
-  // How Lexicon reacts to touching an ungranted capability:
-  //   'throw'   — raises an error the action can catch
-  //   'halt'    — execution stops dead, silently, uncatchable
-  //   'silent'  — returns undefined / no-ops but execution continues
-  //   'none'    — not enforced at runtime at all
+  // How Lexicon reacts to touching an ungranted capability: the capability is
+  // simply OMITTED from what gets injected. There is no permission error.
   //
-  // Strong evidence for 'halt', pending one more probe: an action granted only
-  // track.read touched _vars.playlistsAll and simply stopped after 3ms — no
-  // error logged, no exception, and the remaining statements never ran.
-  // See sandboxHaltsSilently below.
-  permissionDenialMode: { value: 'halt', source: 'probe-pending' },
+  //   denied _vars read      -> a useless placeholder, NOT undefined and NOT
+  //                             an array. _vars.playlistsAll came back as a
+  //                             non-array object with no length;
+  //                             _vars.tracksAllAmount came back as null.
+  //                             Execution continues.
+  //   denied _library method -> absent from the object, so calling it is a
+  //                             plain TypeError:
+  //                             "getNextAllBatch is not a function"
+  //
+  // So a plugin with the wrong permissions does not fail loudly. It iterates
+  // an empty placeholder, finds nothing, reports success, and does nothing —
+  // or dies on a TypeError that never mentions permissions.
+  //
+  // The harness is deliberately STRICTER: it throws PermissionError naming the
+  // exact manifest line to add, because a test that silently passes over an
+  // empty placeholder is worthless.
+  permissionDenialMode: { value: 'omitted', source: 'probe' },
 
-  // The most dangerous property of this sandbox: some guard violations do not
-  // throw, they terminate the script where it stands. Nothing is written to
-  // the plugin log, no error surfaces to the user, and a surrounding
-  // try/catch does NOT run. The action simply stops, and Lexicon reports the
-  // run as having completed.
+  // Some failures still terminate the script where it stands, with no log
+  // entry, no error, and no chance to react. Confirmed for a `try` block whose
+  // body does not throw, and for assigning to an injected global.
   //
-  // Observed for: a denied capability access, and at least one blocked static
-  // built-in. Suspected for assignment to an injected global.
-  //
-  // Practical consequence for plugin authors: you cannot defend against this
-  // at runtime. The only defence is not writing the offending code, which is
-  // what the lint rules and the permission checker are for.
+  // Practical consequence: you cannot defend against this at runtime. The only
+  // defence is not writing the offending code, which is what the lint rules
+  // and the permission checker are for.
   sandboxHaltsSilently: { value: true, source: 'probe' },
 
   // How a write to a field outside modifyFields behaves.
@@ -141,10 +145,35 @@ export const SANDBOX_PARSER_FACTS = {
   //   Static method or property access not permitted: Object.prototype
   objectPrototypeAccess: { supported: false, source: 'probe' },
 
-  // A catch binding inside a nested function declaration fails with
-  // "err is not defined", while a top-level try/catch works. Reproduced twice,
-  // in two separate probes.
-  catchInsideNestedFunction: { supported: false, source: 'probe' }
+  // try/catch is effectively UNUSABLE. Two independent failures:
+  //
+  //  1. The catch parameter is never bound. Referencing it throws
+  //     "err is not defined" — and renaming it changes nothing: a probe using
+  //     `catch (errA)` failed with "errA is not defined". So this is not a
+  //     name collision, the binding simply does not exist. An earlier reading
+  //     blamed nested functions; top-level catch is equally broken.
+  //
+  //  2. A `try` block whose body does NOT throw halts the action silently.
+  //     A probe ran `Object.keys({a: 1, b: 2}).length` at the top level fine,
+  //     then the identical statement inside a try block, and stopped dead.
+  //
+  // Conclusion: you cannot do error handling in a Lexicon plugin. Validate
+  // inputs up front and throw a clear Error instead — a thrown error IS shown
+  // to the user, which is the one reliable failure path.
+  tryCatch: { supported: false, source: 'probe' },
+  catchBindingIsBound: { supported: false, source: 'probe' },
+
+  // Block scope is FLATTENED. Two sibling blocks each declaring `const value`
+  // fails with "Identifier 'value' has already been declared", which is legal
+  // JavaScript everywhere else. Every block-scoped name in an action must be
+  // unique across the whole file.
+  blockScopeIsolated: { supported: false, source: 'probe' },
+
+  // Object.assign is blocked: "Static method or property access not
+  // permitted: Object.assign". Object.keys, Object.values and Object.entries
+  // all work. The remaining built-in statics are still unprobed — the probe
+  // died on Object.assign before reaching them.
+  objectAssign: { supported: false, source: 'probe' }
 }
 
 // Fields that appear on a track object handed to a plugin, with the defaults a

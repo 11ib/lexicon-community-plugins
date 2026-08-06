@@ -1,16 +1,15 @@
-// R4: which denied capability halts the action, and how?
+// R5: what exactly does a denied capability return?
 //
-// No try/catch anywhere. A silent halt is not catchable, and repeated
-// `catch (err)` blocks are themselves a suspect. Sequential statements with a
-// stage marker after each one answer the question on their own:
+// Round 4 established that denied capabilities are OMITTED rather than
+// throwing: denied _vars reads returned a non-array object, tracksAllAmount
+// returned null, and _library.track.getNextAllBatch was not a function.
 //
-//   lastCompleted tells you the last access that SURVIVED.
-//   The next line in this file is the one that killed it.
+// This pins down the placeholder values and continues past the TypeError that
+// stopped round 4, using typeof guards instead of calling anything blindly.
 //
 // Granted: track.read=selected, files.write. Nothing else.
-// Nothing destructive.
 
-const results = { probe: 'perm.denied.r4', lastCompleted: 'start', reads: {} }
+const results = { probe: 'perm.denied.r5', lastCompleted: 'start', reads: {} }
 
 function save() {
   _files.write('perm-denied.json', JSON.stringify(results, null, 2))
@@ -18,146 +17,69 @@ function save() {
 
 save()
 
-// --- granted, as a baseline ---------------------------------------------
-
-const selected = _vars.tracksSelected
+const grantedSelected = _vars.tracksSelected
 
 results.reads.tracksSelected = {
-  type: typeof selected,
-  isArray: Array.isArray(selected),
-  length: Array.isArray(selected) ? selected.length : null
+  type: typeof grantedSelected,
+  isArray: Array.isArray(grantedSelected),
+  length: Array.isArray(grantedSelected) ? grantedSelected.length : null
 }
 
-results.lastCompleted = 'GRANTED _vars.tracksSelected'
+results.lastCompleted = 'GRANTED tracksSelected'
 save()
-
-// --- reads that were NOT granted ----------------------------------------
-// If Lexicon returns undefined and keeps going, these record it.
-// If Lexicon halts, the file stops here and lastCompleted names the survivor.
 
 const deniedPlaylists = _vars.playlistsAll
 
 results.reads.playlistsAll = {
   type: typeof deniedPlaylists,
-  isUndefined: deniedPlaylists === undefined,
+  isNull: deniedPlaylists === null,
   isArray: Array.isArray(deniedPlaylists),
-  length: Array.isArray(deniedPlaylists) ? deniedPlaylists.length : null
+  json: JSON.stringify(deniedPlaylists),
+  keys: deniedPlaylists !== null && typeof deniedPlaylists === 'object' ? Object.keys(deniedPlaylists) : null
 }
 
-results.lastCompleted = 'DENIED _vars.playlistsAll'
+results.lastCompleted = 'DENIED playlistsAll'
 save()
 
 const deniedTags = _vars.customTags
 
 results.reads.customTags = {
   type: typeof deniedTags,
-  isUndefined: deniedTags === undefined,
-  length: Array.isArray(deniedTags) ? deniedTags.length : null
+  isNull: deniedTags === null,
+  json: JSON.stringify(deniedTags),
+  keys: deniedTags !== null && typeof deniedTags === 'object' ? Object.keys(deniedTags) : null
 }
 
-results.lastCompleted = 'DENIED _vars.customTags'
+results.lastCompleted = 'DENIED customTags'
 save()
 
-const deniedAmount = _vars.tracksAllAmount
-
-results.reads.tracksAllAmount = { type: typeof deniedAmount, value: deniedAmount }
-results.lastCompleted = 'DENIED _vars.tracksAllAmount (read=selected only)'
-save()
-
-const deniedBatch = await _library.track.getNextAllBatch()
-
-results.reads.getNextAllBatch = {
-  type: typeof deniedBatch,
-  isUndefined: deniedBatch === undefined,
-  length: Array.isArray(deniedBatch) ? deniedBatch.length : null
+// _library method presence, checked with typeof rather than called.
+results.reads.libraryShape = {
+  trackObject: typeof _library.track,
+  getNextAllBatch: typeof _library.track.getNextAllBatch,
+  trackCreate: typeof _library.track.create,
+  trackDelete: typeof _library.track.delete,
+  playlistObject: typeof _library.playlist,
+  playlistCreate: typeof _library.playlist.create,
+  customTagObject: typeof _library.customTag,
+  storageSave: typeof _storage.save,
+  storageLoad: typeof _storage.load,
+  networkGet: typeof _network.GET,
+  filesWrite: typeof _files.write,
+  filesRead: typeof _files.read,
+  filesList: typeof _files.list,
+  uiControl: typeof _ui.control,
+  musicplayerNowPlaying: typeof _musicplayer.getNowPlaying
 }
 
-results.lastCompleted = 'DENIED _library.track.getNextAllBatch'
+results.lastCompleted = 'library-shape'
 save()
 
-// --- capabilities that were NOT granted ---------------------------------
-
-_storage.save('perm.denied.key', 'should-not-persist')
-
-results.lastCompleted = 'DENIED _storage.save'
-save()
-
-const deniedLoad = _storage.load('perm.denied.key')
-
-results.reads.storageLoad = { type: typeof deniedLoad, value: deniedLoad }
-results.lastCompleted = 'DENIED _storage.load'
-save()
-
-const deniedFetch = await _network.GET({ url: 'https://example.com', headers: {} })
-
-results.reads.networkGet = { type: typeof deniedFetch }
-results.lastCompleted = 'DENIED _network.GET'
-save()
-
-const deniedRead = _files.read('perm-denied.json')
-
-results.reads.filesRead = {
-  type: typeof deniedRead,
-  isNull: deniedRead === null,
-  length: deniedRead === null || deniedRead === undefined ? null : String(deniedRead).length
-}
-
-results.lastCompleted = 'DENIED _files.read (only files.write granted)'
-save()
-
-const deniedList = _files.list()
-
-results.reads.filesList = {
-  type: typeof deniedList,
-  isUndefined: deniedList === undefined,
-  value: deniedList
-}
-
-results.lastCompleted = 'DENIED _files.list (only files.write granted)'
-save()
-
-const nowPlaying = _musicplayer.getNowPlaying()
-
-results.reads.nowPlaying = { type: typeof nowPlaying, isNull: nowPlaying === null }
-results.lastCompleted = 'UNDECLARED _musicplayer.getNowPlaying'
-save()
-
-_ui.control('Probe_NoSuchAction')
-
-results.lastCompleted = 'DENIED _ui.control'
-save()
-
-// Creates a playlist IF permissions are not enforced. Named to be obvious.
-const madePlaylist = await _library.playlist.create({
-  name: 'ZZ PROBE DELETE ME - permissions not enforced',
-  parentId: null,
-  type: '2'
-})
-
-results.reads.playlistCreate = {
-  type: typeof madePlaylist,
-  isUndefined: madePlaylist === undefined,
-  id: madePlaylist === undefined || madePlaylist === null ? null : madePlaylist.id
-}
-
-results.lastCompleted = 'DENIED _library.playlist.create'
-save()
-
-// --- writing a track field with NO modify permission --------------------
-
-if (Array.isArray(selected) && selected.length > 0) {
-  const target = selected[0]
-
-  results.writeTargetId = target.id
-  results.writeValueBefore = target.extra1
-
-  target.extra1 = 'perm-denied-write'
-
-  results.writeValueAfterInMemory = target.extra1
-}
-
-results.lastCompleted = 'DENIED track.extra1 write'
+results.reads.libraryTrackKeys = Object.keys(_library.track)
+results.reads.libraryKeys = Object.keys(_library)
+results.lastCompleted = 'library-keys'
 results.finished = true
 save()
 
-_helpers.Report('Completed every attempt without halting')
+_helpers.Report('Denied playlistsAll is: ' + results.reads.playlistsAll.json)
+_helpers.Report('getNextAllBatch is: ' + results.reads.libraryShape.getNextAllBatch)
