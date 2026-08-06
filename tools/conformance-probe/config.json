@@ -5,6 +5,23 @@
   },
   "actions": [
     {
+      "id": "vars.selected",
+      "name": "R3-0 Isolated tracksSelected Read",
+      "description": "Reads _vars.tracksSelected as the very first statement, then again after Object.keys. Read-only.",
+      "config": {
+        "permissions": {
+          "track": {
+            "read": [
+              "selected"
+            ]
+          },
+          "files": {
+            "write": true
+          }
+        }
+      }
+    },
+    {
       "id": "syn.template",
       "name": "R3-1 Syntax Template Literals",
       "description": "Tests whether template literals parse. Writes syn-template.json on success.",

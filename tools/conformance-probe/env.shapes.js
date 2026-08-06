@@ -15,6 +15,20 @@ function save() {
 results.ranAt = new Date().toISOString()
 save()
 
+// Read tracksSelected BEFORE anything else touches _vars. Round 2 read it
+// after Object.keys(_vars) and a batch of typeof checks, and got undefined
+// despite tracks genuinely being selected.
+const earlyRead = _vars.tracksSelected
+
+results.earlyRead = {
+  type: typeof earlyRead,
+  isArray: Array.isArray(earlyRead),
+  length: Array.isArray(earlyRead) ? earlyRead.length : null
+}
+
+results.lastCompleted = 'early-tracksSelected'
+save()
+
 results.varsKeys = Object.keys(_vars)
 results.lastCompleted = 'varsKeys'
 save()
