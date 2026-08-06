@@ -184,6 +184,26 @@ cycle on it.
 Note this applies to the action `name` (what the user sees in the menu), not the
 action `id` — ids with dots like `energy.to.rating` are fine.
 
+**`author` must carry a contact route.** (probed)
+
+The docs list `discordUsername` and `email` as optional. They are not — a plugin
+with neither fails to load:
+
+```
+invalid config: plugin property "author.discordUsername" or "author.email" is required
+```
+
+```json
+{
+  "author": {
+    "name": "Your Name",
+    "email": "you@example.com"
+  }
+}
+```
+
+Either field satisfies it. `npm run validate` enforces this.
+
 ---
 
 ## Some failures halt your script silently

@@ -65,6 +65,20 @@ for (const folder of listPluginDirs()) {
     continue
   }
 
+  // Checked before the schema so the message is readable. Ajv reports an
+  // anyOf failure as "must match a schema in anyOf", which tells a contributor
+  // nothing. Lexicon's own error is:
+  //   invalid config: plugin property "author.discordUsername" or
+  //   "author.email" is required
+  if (config.author && !config.author.discordUsername && !config.author.email) {
+    fail(
+      folder,
+      'author needs a contact route — add "discordUsername" or "email". ' +
+        'Lexicon refuses to load the plugin without one, even though the docs call both optional.'
+    )
+    continue
+  }
+
   if (!validate(config)) {
     for (const err of validate.errors) {
       const where = err.instancePath || '(root)'

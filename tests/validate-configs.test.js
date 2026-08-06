@@ -61,7 +61,7 @@ function validate(config, extraFiles = {}) {
 function manifest(overrides = {}) {
   return {
     id: 'fixture.plugin',
-    author: { name: 'Fixture' },
+    author: { name: 'Fixture', email: 'fixture@example.com' },
     actions: [
       {
         id: 'my.action',
@@ -114,6 +114,29 @@ describe('action name character restriction', () => {
 
     expect(result.ok, `expected "${name}" to be rejected`).toBe(false)
     expect(result.output).toContain('name must match pattern')
+  })
+})
+
+describe('author contact requirement', () => {
+  // Lexicon refuses to load a plugin whose author has neither field:
+  //   invalid config: plugin property "author.discordUsername" or
+  //   "author.email" is required
+  // The official docs list both as optional, so this is easy to trip over.
+  it('rejects an author with neither email nor discordUsername', () => {
+    const result = validate(manifest({ author: { name: 'Nameless' } }))
+
+    expect(result.ok).toBe(false)
+    expect(result.output).toContain('author needs a contact route')
+  })
+
+  it('accepts an author with only an email', () => {
+    const result = validate(manifest({ author: { name: 'A', email: 'a@example.com' } }))
+    expect(result.ok, result.output).toBe(true)
+  })
+
+  it('accepts an author with only a discord username', () => {
+    const result = validate(manifest({ author: { name: 'A', discordUsername: 'someone' } }))
+    expect(result.ok, result.output).toBe(true)
   })
 })
 

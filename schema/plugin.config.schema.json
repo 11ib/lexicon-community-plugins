@@ -14,13 +14,18 @@
     },
     "author": {
       "type": "object",
+      "description": "Lexicon requires a contact route: at least one of discordUsername or email must be present, even though the docs list both as optional.",
       "required": ["name"],
       "properties": {
         "name": { "type": "string", "minLength": 1 },
-        "discordUsername": { "type": "string" },
-        "email": { "type": "string" }
+        "discordUsername": { "type": "string", "minLength": 1 },
+        "email": { "type": "string", "minLength": 1 }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "anyOf": [
+        { "required": ["discordUsername"] },
+        { "required": ["email"] }
+      ]
     },
     "actions": {
       "type": "array",
