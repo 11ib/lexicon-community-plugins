@@ -1,12 +1,12 @@
-// R3: which static built-in helpers does the sandbox allow?
+// R4: which static built-in halts the action?
 //
-// Round 2 ran this for 46ms, logged no error, and wrote no file. Something in
-// here halts execution silently — try/catch does not catch it and nothing is
-// logged. So this version writes the results file after EVERY check.
+// No try/catch — a halt is not catchable, and repeated catch blocks are
+// themselves a suspect. Each check is a plain statement followed by a stage
+// marker, with a unique variable name so nothing can collide.
 //
-// Read the last entry in the file: the check AFTER it is the one that halts.
+// lastCompleted names the last helper that WORKED. The next one killed it.
 
-const results = { probe: 'syn.static.r3', lastCompleted: 'none', checks: [] }
+const results = { probe: 'syn.static.r4', lastCompleted: 'start', checks: [] }
 
 function save() {
   _files.write('syn-static.json', JSON.stringify(results, null, 2))
@@ -14,188 +14,97 @@ function save() {
 
 save()
 
-// Each check is deliberately its own top-level block. No loops, no helper
-// functions holding the risky call, so a halt lands on a known line.
-
-try {
-  const value = Object.keys({ a: 1, b: 2 }).length
-  results.checks.push({ name: 'Object.keys', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'Object.keys', ok: false, detail: err.message })
-}
-
+const check0 = Object.keys({ a: 1, b: 2 }).length
+results.checks.push({ name: 'Object.keys', value: check0 })
 results.lastCompleted = 'Object.keys'
 save()
 
-try {
-  const value = Object.values({ a: 1, b: 2 }).length
-  results.checks.push({ name: 'Object.values', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'Object.values', ok: false, detail: err.message })
-}
-
+const check1 = Object.values({ a: 1, b: 2 }).length
+results.checks.push({ name: 'Object.values', value: check1 })
 results.lastCompleted = 'Object.values'
 save()
 
-try {
-  const value = Object.entries({ a: 1 }).length
-  results.checks.push({ name: 'Object.entries', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'Object.entries', ok: false, detail: err.message })
-}
-
+const check2 = Object.entries({ a: 1 }).length
+results.checks.push({ name: 'Object.entries', value: check2 })
 results.lastCompleted = 'Object.entries'
 save()
 
-try {
-  const value = Object.assign({}, { a: 1 }, { b: 2 })
-  results.checks.push({ name: 'Object.assign', ok: true, detail: Object.keys(value).length })
-} catch (err) {
-  results.checks.push({ name: 'Object.assign', ok: false, detail: err.message })
-}
-
+const check3 = Object.keys(Object.assign({}, { a: 1 }, { b: 2 })).length
+results.checks.push({ name: 'Object.assign', value: check3 })
 results.lastCompleted = 'Object.assign'
 save()
 
-try {
-  const value = Object.fromEntries([['a', 1]])
-  results.checks.push({ name: 'Object.fromEntries', ok: true, detail: value.a })
-} catch (err) {
-  results.checks.push({ name: 'Object.fromEntries', ok: false, detail: err.message })
-}
-
+const check4 = Object.fromEntries([['a', 1]]).a
+results.checks.push({ name: 'Object.fromEntries', value: check4 })
 results.lastCompleted = 'Object.fromEntries'
 save()
 
-try {
-  const value = Object.getOwnPropertyNames({ a: 1 }).length
-  results.checks.push({ name: 'Object.getOwnPropertyNames', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'Object.getOwnPropertyNames', ok: false, detail: err.message })
-}
-
+const check5 = Object.getOwnPropertyNames({ a: 1 }).length
+results.checks.push({ name: 'Object.getOwnPropertyNames', value: check5 })
 results.lastCompleted = 'Object.getOwnPropertyNames'
 save()
 
-try {
-  const value = Object.getPrototypeOf({ a: 1 })
-  results.checks.push({ name: 'Object.getPrototypeOf', ok: true, detail: typeof value })
-} catch (err) {
-  results.checks.push({ name: 'Object.getPrototypeOf', ok: false, detail: err.message })
-}
-
+const check6 = typeof Object.getPrototypeOf({ a: 1 })
+results.checks.push({ name: 'Object.getPrototypeOf', value: check6 })
 results.lastCompleted = 'Object.getPrototypeOf'
 save()
 
-try {
-  const value = Object.freeze({ a: 1 })
-  results.checks.push({ name: 'Object.freeze', ok: true, detail: typeof value })
-} catch (err) {
-  results.checks.push({ name: 'Object.freeze', ok: false, detail: err.message })
-}
-
+const check7 = typeof Object.freeze({ a: 1 })
+results.checks.push({ name: 'Object.freeze', value: check7 })
 results.lastCompleted = 'Object.freeze'
 save()
 
-try {
-  const value = Array.isArray([1, 2])
-  results.checks.push({ name: 'Array.isArray', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'Array.isArray', ok: false, detail: err.message })
-}
-
+const check8 = Array.isArray([1, 2])
+results.checks.push({ name: 'Array.isArray', value: check8 })
 results.lastCompleted = 'Array.isArray'
 save()
 
-try {
-  const value = Array.from([1, 2, 3]).length
-  results.checks.push({ name: 'Array.from', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'Array.from', ok: false, detail: err.message })
-}
-
+const check9 = Array.from([1, 2, 3]).length
+results.checks.push({ name: 'Array.from', value: check9 })
 results.lastCompleted = 'Array.from'
 save()
 
-try {
-  const value = Number.isFinite(1)
-  results.checks.push({ name: 'Number.isFinite', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'Number.isFinite', ok: false, detail: err.message })
-}
-
+const check10 = Number.isFinite(1)
+results.checks.push({ name: 'Number.isFinite', value: check10 })
 results.lastCompleted = 'Number.isFinite'
 save()
 
-try {
-  const value = Number.parseFloat('1.5')
-  results.checks.push({ name: 'Number.parseFloat', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'Number.parseFloat', ok: false, detail: err.message })
-}
-
+const check11 = Number.parseFloat('1.5')
+results.checks.push({ name: 'Number.parseFloat', value: check11 })
 results.lastCompleted = 'Number.parseFloat'
 save()
 
-try {
-  const value = Math.max(1, 2, 3)
-  results.checks.push({ name: 'Math.max', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'Math.max', ok: false, detail: err.message })
-}
-
+const check12 = Math.max(1, 2, 3)
+results.checks.push({ name: 'Math.max', value: check12 })
 results.lastCompleted = 'Math.max'
 save()
 
-try {
-  const value = JSON.parse('{"a":1}').a
-  results.checks.push({ name: 'JSON.parse', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'JSON.parse', ok: false, detail: err.message })
-}
-
+const check13 = JSON.parse('{"a":1}').a
+results.checks.push({ name: 'JSON.parse', value: check13 })
 results.lastCompleted = 'JSON.parse'
 save()
 
-try {
-  const value = Date.now()
-  results.checks.push({ name: 'Date.now', ok: true, detail: typeof value })
-} catch (err) {
-  results.checks.push({ name: 'Date.now', ok: false, detail: err.message })
-}
-
+const check14 = typeof Date.now()
+results.checks.push({ name: 'Date.now', value: check14 })
 results.lastCompleted = 'Date.now'
 save()
 
-try {
-  const value = String.fromCharCode(65)
-  results.checks.push({ name: 'String.fromCharCode', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'String.fromCharCode', ok: false, detail: err.message })
-}
-
+const check15 = String.fromCharCode(65)
+results.checks.push({ name: 'String.fromCharCode', value: check15 })
 results.lastCompleted = 'String.fromCharCode'
 save()
 
-try {
-  const value = Promise.resolve(1)
-  results.checks.push({ name: 'Promise.resolve', ok: true, detail: typeof value })
-} catch (err) {
-  results.checks.push({ name: 'Promise.resolve', ok: false, detail: err.message })
-}
-
+const check16 = typeof Promise.resolve(1)
+results.checks.push({ name: 'Promise.resolve', value: check16 })
 results.lastCompleted = 'Promise.resolve'
 save()
 
-try {
-  const value = new RegExp('^a$').test('a')
-  results.checks.push({ name: 'new RegExp', ok: true, detail: value })
-} catch (err) {
-  results.checks.push({ name: 'new RegExp', ok: false, detail: err.message })
-}
-
+const check17 = new RegExp('^a$').test('a')
+results.checks.push({ name: 'new RegExp', value: check17 })
 results.lastCompleted = 'new RegExp'
+save()
+
 results.finished = true
 save()
 
-_helpers.Report('Completed all ' + results.checks.length + ' checks')
+_helpers.Report('All ' + results.checks.length + ' static helpers worked')

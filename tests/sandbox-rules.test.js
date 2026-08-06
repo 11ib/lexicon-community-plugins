@@ -109,11 +109,43 @@ describe('undocumented restrictions found by probing', () => {
     )
   })
 
-  it('rejects destructuring defaults too, which share the same syntax node', async () => {
+  it('rejects object destructuring', async () => {
+    // Real Lexicon error: Unexpected token after prop: {: const { alpha } = source
     await expectRejected(
-      'const source = { a: 1 }\nconst { a = 2 } = source\n_helpers.Log(String(a))',
-      'default values in parameters'
+      'const source = { alpha: 1 }\nconst { alpha } = source\n_helpers.Log(String(alpha))',
+      'object destructuring'
     )
+  })
+
+  it('rejects array destructuring', async () => {
+    await expectRejected(
+      'const items = [1, 2]\nconst [first] = items\n_helpers.Log(String(first))',
+      'array destructuring'
+    )
+  })
+
+  it('accepts template literals, which do work', async () => {
+    const ids = await ruleIdsFor('const n = 3\n_helpers.Report(`Added ${n} track(s)`)')
+    expect(ids).not.toContain('no-restricted-syntax')
+  })
+
+  it('accepts spread, which does work', async () => {
+    const ids = await ruleIdsFor('const a = [1, 2]\nconst b = [...a, 3]\n_helpers.Log(String(b.length))')
+    expect(ids).not.toContain('no-restricted-syntax')
+  })
+
+  it('rejects assigning to an injected global', async () => {
+    // This halts the action silently in Lexicon — the worst failure mode there is.
+    await expectRejected("_settings['Key'] = 'x'", 'silently halts')
+    await expectRejected('_vars.tracksSelected = []', 'silently halts')
+  })
+
+  it('still accepts mutating a track handed to the action', async () => {
+    // This is the normal way to persist changes and must not be flagged.
+    const ids = await ruleIdsFor(
+      'for (const track of _vars.tracksSelected) {\n  track.rating = 5\n}'
+    )
+    expect(ids).not.toContain('no-restricted-syntax')
   })
 
   it('rejects Object.prototype access', async () => {

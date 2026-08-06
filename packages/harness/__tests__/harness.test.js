@@ -297,6 +297,35 @@ _helpers.Report(a + '/' + String(b))`,
   it('rejects an unknown _vars key instead of returning undefined', async () => {
     await expect(run('const x = _vars.tracksAll')).rejects.toThrow(/does not exist in Lexicon/)
   })
+
+  it('names the customTagsCategories docs error explicitly', async () => {
+    // The official docs say _vars.customTagsCategories. That key does not
+    // exist — in Lexicon it returns undefined and the next property access
+    // kills the action with a bare "Cannot get property of undefined".
+    await expect(
+      run('const c = _vars.customTagsCategories', { customTag: { read: ['all'] } })
+    ).rejects.toThrow(/customTagCategories \(no "s" after customTag\)/)
+  })
+
+  it('exposes custom tag categories under the real key', async () => {
+    const result = await run(
+      '_helpers.Report(String(_vars.customTagCategories.length))',
+      { customTag: { read: ['all'] } },
+      { customTagCategories: [{ id: 1, name: 'Genre' }] }
+    )
+
+    expect(result.report).toEqual(['1'])
+  })
+
+  it('uses label rather than name for a custom tag', async () => {
+    const result = await run(
+      '_helpers.Report(_vars.customTags[0].label)',
+      { customTag: { read: ['all'] } },
+      { customTags: [{ id: 1, label: 'Peak Time', categoryId: 2 }] }
+    )
+
+    expect(result.report).toEqual(['Peak Time'])
+  })
 })
 
 describe('fixtures', () => {

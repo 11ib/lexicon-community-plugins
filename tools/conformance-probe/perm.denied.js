@@ -1,14 +1,16 @@
-// R3: what happens when an action touches a capability it was NOT granted?
+// R4: which denied capability halts the action, and how?
 //
-// Round 2 ran this for 3ms, logged nothing, and wrote no file — strongly
-// suggesting a denied access halts execution silently rather than throwing.
-// This version writes after every attempt, so the last recorded attempt
-// identifies exactly which access stops the script.
+// No try/catch anywhere. A silent halt is not catchable, and repeated
+// `catch (err)` blocks are themselves a suspect. Sequential statements with a
+// stage marker after each one answer the question on their own:
+//
+//   lastCompleted tells you the last access that SURVIVED.
+//   The next line in this file is the one that killed it.
 //
 // Granted: track.read=selected, files.write. Nothing else.
-// Nothing destructive: no deletes, no track creation.
+// Nothing destructive.
 
-const results = { probe: 'perm.denied.r3', lastCompleted: 'none', attempts: [] }
+const results = { probe: 'perm.denied.r4', lastCompleted: 'start', reads: {} }
 
 function save() {
   _files.write('perm-denied.json', JSON.stringify(results, null, 2))
@@ -18,207 +20,144 @@ save()
 
 // --- granted, as a baseline ---------------------------------------------
 
-try {
-  const value = _vars.tracksSelected
-  results.attempts.push({
-    label: '_vars.tracksSelected (GRANTED)',
-    outcome: 'returned',
-    detail: value === undefined ? 'undefined' : 'array length=' + value.length
-  })
-} catch (err) {
-  results.attempts.push({ label: '_vars.tracksSelected (GRANTED)', outcome: 'threw', detail: err.message })
+const selected = _vars.tracksSelected
+
+results.reads.tracksSelected = {
+  type: typeof selected,
+  isArray: Array.isArray(selected),
+  length: Array.isArray(selected) ? selected.length : null
 }
 
-results.lastCompleted = '_vars.tracksSelected'
+results.lastCompleted = 'GRANTED _vars.tracksSelected'
 save()
 
 // --- reads that were NOT granted ----------------------------------------
+// If Lexicon returns undefined and keeps going, these record it.
+// If Lexicon halts, the file stops here and lastCompleted names the survivor.
 
-try {
-  const value = _vars.playlistsAll
-  results.attempts.push({
-    label: '_vars.playlistsAll',
-    outcome: 'returned',
-    detail: value === undefined ? 'undefined' : 'array length=' + value.length
-  })
-} catch (err) {
-  results.attempts.push({ label: '_vars.playlistsAll', outcome: 'threw', detail: err.message })
+const deniedPlaylists = _vars.playlistsAll
+
+results.reads.playlistsAll = {
+  type: typeof deniedPlaylists,
+  isUndefined: deniedPlaylists === undefined,
+  isArray: Array.isArray(deniedPlaylists),
+  length: Array.isArray(deniedPlaylists) ? deniedPlaylists.length : null
 }
 
-results.lastCompleted = '_vars.playlistsAll'
+results.lastCompleted = 'DENIED _vars.playlistsAll'
 save()
 
-try {
-  const value = _vars.customTags
-  results.attempts.push({
-    label: '_vars.customTags',
-    outcome: 'returned',
-    detail: value === undefined ? 'undefined' : 'array length=' + value.length
-  })
-} catch (err) {
-  results.attempts.push({ label: '_vars.customTags', outcome: 'threw', detail: err.message })
+const deniedTags = _vars.customTags
+
+results.reads.customTags = {
+  type: typeof deniedTags,
+  isUndefined: deniedTags === undefined,
+  length: Array.isArray(deniedTags) ? deniedTags.length : null
 }
 
-results.lastCompleted = '_vars.customTags'
+results.lastCompleted = 'DENIED _vars.customTags'
 save()
 
-try {
-  const value = _vars.tracksAllAmount
-  results.attempts.push({
-    label: '_vars.tracksAllAmount (read=selected only)',
-    outcome: 'returned',
-    detail: String(value)
-  })
-} catch (err) {
-  results.attempts.push({ label: '_vars.tracksAllAmount', outcome: 'threw', detail: err.message })
-}
+const deniedAmount = _vars.tracksAllAmount
 
-results.lastCompleted = '_vars.tracksAllAmount'
+results.reads.tracksAllAmount = { type: typeof deniedAmount, value: deniedAmount }
+results.lastCompleted = 'DENIED _vars.tracksAllAmount (read=selected only)'
 save()
 
-try {
-  const batch = await _library.track.getNextAllBatch()
-  results.attempts.push({
-    label: '_library.track.getNextAllBatch (read=selected only)',
-    outcome: 'returned',
-    detail: batch === undefined ? 'undefined' : 'length=' + batch.length
-  })
-} catch (err) {
-  results.attempts.push({ label: '_library.track.getNextAllBatch', outcome: 'threw', detail: err.message })
+const deniedBatch = await _library.track.getNextAllBatch()
+
+results.reads.getNextAllBatch = {
+  type: typeof deniedBatch,
+  isUndefined: deniedBatch === undefined,
+  length: Array.isArray(deniedBatch) ? deniedBatch.length : null
 }
 
-results.lastCompleted = '_library.track.getNextAllBatch'
+results.lastCompleted = 'DENIED _library.track.getNextAllBatch'
 save()
 
 // --- capabilities that were NOT granted ---------------------------------
 
-try {
-  _storage.save('perm.denied.key', 'should-not-persist')
-  results.attempts.push({ label: '_storage.save', outcome: 'returned', detail: 'no error' })
-} catch (err) {
-  results.attempts.push({ label: '_storage.save', outcome: 'threw', detail: err.message })
-}
+_storage.save('perm.denied.key', 'should-not-persist')
 
-results.lastCompleted = '_storage.save'
+results.lastCompleted = 'DENIED _storage.save'
 save()
 
-try {
-  const value = _storage.load('perm.denied.key')
-  results.attempts.push({ label: '_storage.load', outcome: 'returned', detail: JSON.stringify(value) })
-} catch (err) {
-  results.attempts.push({ label: '_storage.load', outcome: 'threw', detail: err.message })
-}
+const deniedLoad = _storage.load('perm.denied.key')
 
-results.lastCompleted = '_storage.load'
+results.reads.storageLoad = { type: typeof deniedLoad, value: deniedLoad }
+results.lastCompleted = 'DENIED _storage.load'
 save()
 
-try {
-  const value = await _network.GET({ url: 'https://example.com', headers: {} })
-  results.attempts.push({ label: '_network.GET', outcome: 'returned', detail: typeof value })
-} catch (err) {
-  results.attempts.push({ label: '_network.GET', outcome: 'threw', detail: err.message })
-}
+const deniedFetch = await _network.GET({ url: 'https://example.com', headers: {} })
 
-results.lastCompleted = '_network.GET'
+results.reads.networkGet = { type: typeof deniedFetch }
+results.lastCompleted = 'DENIED _network.GET'
 save()
 
-try {
-  const value = _files.read('syn-static.json')
-  results.attempts.push({
-    label: '_files.read (only files.write granted)',
-    outcome: 'returned',
-    detail: value === null ? 'null' : 'length=' + String(value).length
-  })
-} catch (err) {
-  results.attempts.push({ label: '_files.read', outcome: 'threw', detail: err.message })
+const deniedRead = _files.read('perm-denied.json')
+
+results.reads.filesRead = {
+  type: typeof deniedRead,
+  isNull: deniedRead === null,
+  length: deniedRead === null || deniedRead === undefined ? null : String(deniedRead).length
 }
 
-results.lastCompleted = '_files.read'
+results.lastCompleted = 'DENIED _files.read (only files.write granted)'
 save()
 
-try {
-  const value = _files.list()
-  results.attempts.push({
-    label: '_files.list (only files.write granted)',
-    outcome: 'returned',
-    detail: value === undefined ? 'undefined' : JSON.stringify(value)
-  })
-} catch (err) {
-  results.attempts.push({ label: '_files.list', outcome: 'threw', detail: err.message })
+const deniedList = _files.list()
+
+results.reads.filesList = {
+  type: typeof deniedList,
+  isUndefined: deniedList === undefined,
+  value: deniedList
 }
 
-results.lastCompleted = '_files.list'
+results.lastCompleted = 'DENIED _files.list (only files.write granted)'
 save()
 
-try {
-  const value = _musicplayer.getNowPlaying()
-  results.attempts.push({
-    label: '_musicplayer.getNowPlaying (no permission declared)',
-    outcome: 'returned',
-    detail: value === null ? 'null' : typeof value
-  })
-} catch (err) {
-  results.attempts.push({ label: '_musicplayer.getNowPlaying', outcome: 'threw', detail: err.message })
-}
+const nowPlaying = _musicplayer.getNowPlaying()
 
-results.lastCompleted = '_musicplayer.getNowPlaying'
+results.reads.nowPlaying = { type: typeof nowPlaying, isNull: nowPlaying === null }
+results.lastCompleted = 'UNDECLARED _musicplayer.getNowPlaying'
 save()
 
-try {
-  _ui.control('Probe_NoSuchAction')
-  results.attempts.push({ label: '_ui.control (control not granted)', outcome: 'returned', detail: 'no error' })
-} catch (err) {
-  results.attempts.push({ label: '_ui.control', outcome: 'threw', detail: err.message })
-}
+_ui.control('Probe_NoSuchAction')
 
-results.lastCompleted = '_ui.control'
+results.lastCompleted = 'DENIED _ui.control'
 save()
 
 // Creates a playlist IF permissions are not enforced. Named to be obvious.
-try {
-  const value = await _library.playlist.create({
-    name: 'ZZ PROBE DELETE ME - permissions not enforced',
-    parentId: null,
-    type: '2'
-  })
-  results.attempts.push({
-    label: '_library.playlist.create (not granted)',
-    outcome: 'returned',
-    detail: value === undefined ? 'undefined' : 'created id=' + value.id
-  })
-} catch (err) {
-  results.attempts.push({ label: '_library.playlist.create', outcome: 'threw', detail: err.message })
+const madePlaylist = await _library.playlist.create({
+  name: 'ZZ PROBE DELETE ME - permissions not enforced',
+  parentId: null,
+  type: '2'
+})
+
+results.reads.playlistCreate = {
+  type: typeof madePlaylist,
+  isUndefined: madePlaylist === undefined,
+  id: madePlaylist === undefined || madePlaylist === null ? null : madePlaylist.id
 }
 
-results.lastCompleted = '_library.playlist.create'
+results.lastCompleted = 'DENIED _library.playlist.create'
 save()
 
 // --- writing a track field with NO modify permission --------------------
 
-if (_vars.tracksSelected && _vars.tracksSelected.length > 0) {
-  const track = _vars.tracksSelected[0]
+if (Array.isArray(selected) && selected.length > 0) {
+  const target = selected[0]
 
-  results.writeTargetId = track.id
-  results.writeValueBefore = track.extra1
+  results.writeTargetId = target.id
+  results.writeValueBefore = target.extra1
 
-  try {
-    track.extra1 = 'perm-denied-write'
-    results.attempts.push({
-      label: 'track.extra1 = ... (no track.modify at all)',
-      outcome: 'returned',
-      detail: 'in-memory value is now ' + track.extra1
-    })
-  } catch (err) {
-    results.attempts.push({ label: 'track.extra1 write', outcome: 'threw', detail: err.message })
-  }
+  target.extra1 = 'perm-denied-write'
 
-  results.writeValueAfterInMemory = track.extra1
-} else {
-  results.attempts.push({ label: 'track write test', outcome: 'skipped', detail: 'no tracks selected' })
+  results.writeValueAfterInMemory = target.extra1
 }
 
-results.lastCompleted = 'track.extra1 write'
+results.lastCompleted = 'DENIED track.extra1 write'
 results.finished = true
 save()
 
-_helpers.Report('Completed all ' + results.attempts.length + ' attempts')
+_helpers.Report('Completed every attempt without halting')

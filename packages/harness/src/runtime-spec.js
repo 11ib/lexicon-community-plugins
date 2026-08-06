@@ -89,11 +89,26 @@ export const RUNTIME_SPEC = {
   // silently dropped rather than rejected.
   unknownFieldWritesDropped: { value: true, source: 'probe' },
 
-  // Whether _vars.playlistsAll is a flat array or a nested tree.
-  playlistsAllIsFlat: { value: true, source: 'guess' },
+  // _vars.playlistsAll is a FLAT array, unlike the Local API's nested tree.
+  // Confirmed across 548 playlists: none carried a `playlists` child array.
+  playlistsAllIsFlat: { value: true, source: 'probe' },
 
-  // Whether playlist.getTrackIds() / getTracks() return promises.
-  playlistAccessorsAreAsync: { value: true, source: 'docs' }
+  // playlist.getTrackIds() and getTracks() both return promises.
+  playlistAccessorsAreAsync: { value: true, source: 'probe' },
+
+  // A playlist never exposes `trackIds` as a property — it is undefined both
+  // before and after getTrackIds() is called. You must use the accessor.
+  playlistExposesTrackIdsProperty: { value: false, source: 'probe' },
+
+  // The docs name this _vars.customTagsCategories. That key does not exist.
+  // The real one is _vars.customTagCategories. Reading the documented spelling
+  // returns undefined, and the next property access kills the action.
+  customTagCategoriesKey: { value: 'customTagCategories', source: 'probe' },
+
+  // Assigning to an injected global halts the action silently, mid-statement.
+  // Confirmed: a probe stopped dead on `_settings['AString'] = '...'`, with the
+  // surrounding try/catch never running and nothing logged.
+  assigningToInjectedGlobalHalts: { value: true, source: 'probe' }
 }
 
 // Sandbox parser restrictions discovered by probing, beyond the four the docs
@@ -108,9 +123,18 @@ export const SANDBOX_PARSER_FACTS = {
 
   // `function f(value = 'x')` fails with:
   //   Unexpected token after prop: w: function withDefault(value = "0")
-  // Assign fallbacks in the function body instead. Destructuring defaults use
-  // the same AST node and are assumed to fail too.
+  // Assign fallbacks in the function body instead.
   defaultParameters: { supported: false, source: 'probe' },
+
+  // `const { alpha } = source` fails with:
+  //   Unexpected token after prop: {: const { alpha } = source
+  // Read properties explicitly: `const alpha = source.alpha`.
+  destructuring: { supported: false, source: 'probe' },
+
+  // Template literals and spread both work — verified in isolation, so the
+  // lint rules deliberately allow them.
+  templateLiterals: { supported: true, source: 'probe' },
+  spread: { supported: true, source: 'probe' },
 
   // `Object.prototype.hasOwnProperty.call(x, k)` and comparisons against
   // Object.prototype fail with:
@@ -196,11 +220,14 @@ export const PLAYLIST_DEFAULTS = {
   data: null
 }
 
+// Confirmed against a live library of 79 custom tags. Note the tag's text is
+// `label`, not `name` — a plugin reading tag.name gets undefined.
 export const CUSTOM_TAG_DEFAULTS = {
   id: 0,
-  name: '',
   categoryId: null,
-  position: 0
+  label: '',
+  position: 0,
+  shortcut: 0
 }
 
 export const CUSTOM_TAG_CATEGORY_DEFAULTS = {

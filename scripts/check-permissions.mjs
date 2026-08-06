@@ -121,7 +121,7 @@ function buildRequirements(perms) {
       granted: has(customTag.read),
       need: 'customTag.read: ["all"]'
     },
-    '_vars.customTagsCategories': {
+    '_vars.customTagCategories': {
       granted: has(customTag.read),
       need: 'customTag.read: ["all"]'
     },
@@ -370,7 +370,7 @@ function analyseAction(source, action) {
   )
 
   warnUnused(
-    has(perms.customTag?.read) && !usedAny('_vars.customTags', '_vars.customTagsCategories'),
+    has(perms.customTag?.read) && !usedAny('_vars.customTags', '_vars.customTagCategories'),
     'grants customTag.read but never reads custom tags'
   )
 

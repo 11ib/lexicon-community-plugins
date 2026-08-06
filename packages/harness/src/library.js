@@ -235,17 +235,32 @@ export function createLibrary(options) {
       return rawCustomTags
     },
 
-    get customTagsCategories() {
+    // The official docs call this _vars.customTagsCategories. That key does not
+    // exist — reading it returns undefined and the next property access kills
+    // the action. The real key, confirmed against a live library, is
+    // customTagCategories (no "s" after customTag).
+    get customTagCategories() {
       perms.customTagRead()
       return rawCategories
     }
   }
 
-  const KNOWN_VARS = ['tracksSelected', 'tracksAllAmount', 'playlistsAll', 'playlistsSelected', 'customTags', 'customTagsCategories']
+  const KNOWN_VARS = ['tracksSelected', 'tracksAllAmount', 'playlistsAll', 'playlistsSelected', 'customTags', 'customTagCategories']
 
   const vars = new Proxy(varsSource, {
     get(target, key) {
       if (typeof key === 'string' && !KNOWN_VARS.includes(key) && key !== 'then') {
+        // The docs' spelling is wrong and it fails silently in the app, so call
+        // it out by name rather than leaving someone to guess.
+        if (key === 'customTagsCategories') {
+          throw new Error(
+            '_vars.customTagsCategories does not exist — the official docs are wrong. ' +
+              'Use _vars.customTagCategories (no "s" after customTag). In Lexicon the ' +
+              'documented spelling returns undefined and kills the action on the next ' +
+              'property access.'
+          )
+        }
+
         throw new Error(
           `_vars.${key} does not exist in Lexicon. Available: ${KNOWN_VARS.join(', ')}`
         )

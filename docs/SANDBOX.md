@@ -77,13 +77,29 @@ if (name === null || name === undefined) {
 }
 ```
 
+**Destructuring does not parse.**
+
+```
+Execution failed: Unexpected token after prop: {: const { alpha } = source
+```
+
+```js
+// Breaks
+const { alpha } = source
+const [first] = items
+
+// Works
+const alpha = source.alpha
+const first = items[0]
+```
+
+Template literals and spread **do** work — both verified in isolation.
+
 **Default parameter values do not parse.**
 
 ```
 Execution failed: Unexpected token after prop: w: function withDefault(value = "0")
 ```
-
-This covers destructuring defaults too — same syntax node.
 
 ```js
 // Breaks
@@ -206,6 +222,32 @@ Either field satisfies it. `npm run validate` enforces this.
 
 ---
 
+## Where the official docs are wrong
+
+**`_vars.customTagsCategories` does not exist.** The real key is
+**`_vars.customTagCategories`** — no `s` after `customTag`.
+
+The documented spelling returns `undefined`, and the next property access kills
+the action with a bare `Cannot get property 'length' of undefined` that points
+nowhere useful. Confirmed by enumerating the live object:
+
+```js
+Object.keys(_vars)
+// ['tracksSelected', 'tracksAllAmount', 'playlistsAll',
+//  'playlistsSelected', 'customTags', 'customTagCategories']
+```
+
+**A custom tag's text is `label`, not `name`.** The real shape:
+
+```js
+{ id: 4, categoryId: 1, label: 'Bass', position: 1, shortcut: 2 }
+```
+
+The harness throws a named error for both mistakes rather than handing back
+`undefined` the way Lexicon does.
+
+---
+
 ## Some failures halt your script silently
 
 Worse than an error: certain guard violations **terminate the action where it
@@ -216,9 +258,22 @@ stands**. Not an exception — execution simply stops.
 - a surrounding `try/catch` does **not** run
 - Lexicon reports the run as completed, with a normal `Execution took Nms`
 
-Observed for a denied capability access and for at least one blocked static
-built-in. A probe granted only `track.read` touched `_vars.playlistsAll`, ran
-for 3ms, logged nothing, and never reached any of its remaining twelve steps.
+**Confirmed cause: assigning to an injected global.** A probe stopped dead on
+`_settings['AString'] = 'x'` — the stage marker before it was written, the one
+after it never was, and the surrounding `try/catch` never ran.
+
+```js
+// Halts here. Silently. Nothing after this line executes.
+_settings['Some Setting'] = 'override'
+_vars.tracksSelected = []
+```
+
+Mutating a track or playlist you were *handed* is fine — that's the normal way
+to persist changes. It's assigning to the globals themselves that kills it.
+`npm run lint` rejects this.
+
+Also observed for a denied capability access and at least one blocked static
+built-in, both still being narrowed down.
 
 ```js
 // If playlistsAll is not granted, execution stops HERE.
@@ -335,17 +390,15 @@ The harness marks these `source: 'guess'` or `'probe-pending'` in
 [`runtime-spec.js`](../packages/harness/src/runtime-spec.js). If you can settle
 one, that's a valuable PR:
 
-- Exactly which static built-ins are blocked. `Object.prototype` is confirmed
-  blocked; one of the others halts a script silently and has not been pinned
-  down yet.
-- Whether `_vars.tracksSelected` is an empty array or `undefined` when nothing
-  is selected.
-- Whether template literals, destructuring and spread parse. Default parameters
-  are confirmed broken; the other three were in the same failed probe and have
-  not been isolated.
-- Whether assigning to an injected global (`_settings['x'] = ...`) is what
-  halts a script silently.
-- Whether `_vars.playlistsAll` is flat or nested.
+- **What a denied capability actually does.** Halt is strongly suspected, but
+  the probe that would prove it kept halting for an unrelated reason. The
+  harness currently throws, which is stricter than the app either way.
+- **Which static built-in is blocked**, beyond `Object.prototype`.
+- **Whether repeated `catch (err)` blocks collide.** Two probes halted inside
+  their first of many sibling `try/catch` blocks, all reusing the same
+  parameter name — suggesting the sandbox flattens block scope. If true,
+  ordinary defensive JavaScript is unwritable here.
+- The shape of a custom tag category object.
 
 [`tools/conformance-probe/`](../tools/conformance-probe/) is the plugin that
 answers these. See its README for how to run it.

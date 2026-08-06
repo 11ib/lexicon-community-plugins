@@ -61,6 +61,27 @@ const SANDBOX_RULES = {
         'Lexicon\'s parser rejects default values in parameters and destructuring. Assign the fallback in the function body instead.'
     },
     {
+      // Real error: Unexpected token after prop: {: const { alpha } = source
+      selector: 'ObjectPattern',
+      message:
+        'Lexicon\'s parser rejects object destructuring. Read the property explicitly: `const alpha = source.alpha`.'
+    },
+    {
+      selector: 'ArrayPattern',
+      message:
+        'Lexicon\'s parser rejects array destructuring. Index explicitly: `const first = items[0]`.'
+    },
+    {
+      // Assigning to an injected global HALTS the action silently, mid-statement.
+      // No error, no log, and a surrounding try/catch does not run.
+      // Note this targets the globals themselves — mutating a track or playlist
+      // you were handed (`track.rating = 5`) is the normal way to persist changes.
+      selector:
+        'AssignmentExpression[left.type="MemberExpression"][left.object.name=/^_(vars|library|settings|storage|network|ui|helpers|files|musicplayer)$/]',
+      message:
+        'Assigning to an injected global silently halts the action in Lexicon — no error, no log, try/catch will not save you. Use a local variable instead.'
+    },
+    {
       // Real error: Static method or property access not permitted: Object.prototype
       selector: 'MemberExpression[object.name="Object"][property.name="prototype"]',
       message:

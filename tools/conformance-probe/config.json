@@ -6,26 +6,9 @@
   },
   "actions": [
     {
-      "id": "vars.selected",
-      "name": "R3-0 Isolated tracksSelected Read",
-      "description": "Reads _vars.tracksSelected as the very first statement, then again after Object.keys. Read-only.",
-      "config": {
-        "permissions": {
-          "track": {
-            "read": [
-              "selected"
-            ]
-          },
-          "files": {
-            "write": true
-          }
-        }
-      }
-    },
-    {
-      "id": "syn.template",
-      "name": "R3-1 Syntax Template Literals",
-      "description": "Tests whether template literals parse. Writes syn-template.json on success.",
+      "id": "dup.catch",
+      "name": "R4-1 Two Catch Blocks Sharing A Name",
+      "description": "Two sibling try-catch blocks both using err. Suspected cause of the silent halts.",
       "config": {
         "permissions": {
           "files": {
@@ -35,9 +18,9 @@
       }
     },
     {
-      "id": "syn.destructure",
-      "name": "R3-2 Syntax Destructuring",
-      "description": "Tests destructuring without default values. Writes syn-destructure.json on success.",
+      "id": "uniq.catch",
+      "name": "R4-2 Two Catch Blocks With Distinct Names",
+      "description": "Same shape as R4-1 but with errA and errB. Isolates name collision from try-catch itself.",
       "config": {
         "permissions": {
           "files": {
@@ -47,9 +30,21 @@
       }
     },
     {
-      "id": "syn.spread",
-      "name": "R3-3 Syntax Spread",
-      "description": "Tests array and object spread. Writes syn-spread.json on success.",
+      "id": "dup.const",
+      "name": "R4-3 Same Const Name In Sibling Blocks",
+      "description": "Declares const value in two sibling blocks, testing whether block scope is flattened.",
+      "config": {
+        "permissions": {
+          "files": {
+            "write": true
+          }
+        }
+      }
+    },
+    {
+      "id": "try.staticcall",
+      "name": "R4-4 Static Call Inside And Outside Try",
+      "description": "Runs Object.keys on an object literal directly and inside a try block.",
       "config": {
         "permissions": {
           "files": {
@@ -60,67 +55,25 @@
     },
     {
       "id": "syn.static",
-      "name": "R3-4 Static Built-in Access",
-      "description": "Tests which Object and Array static helpers work, writing after every check so a silent halt is visible.",
+      "name": "R4-5 Static Built-in Access",
+      "description": "Eighteen static helpers as plain statements with stage markers and no try-catch.",
       "config": {
         "permissions": {
           "files": {
             "write": true
           }
-        }
-      }
-    },
-    {
-      "id": "readonly.assign",
-      "name": "R3-5 Assigning To An Injected Global",
-      "description": "Tests whether assigning to _settings halts the script silently. Read-only otherwise.",
-      "config": {
-        "permissions": {
-          "files": {
-            "write": true
-          }
-        },
-        "settings": {
-          "AString": "hello"
         }
       }
     },
     {
       "id": "perm.denied",
-      "name": "R3-6 Permission Denial",
-      "description": "Touches capabilities this action was NOT granted, writing after every attempt so a silent halt is visible.",
+      "name": "R4-6 Permission Denial",
+      "description": "Touches ungranted capabilities as plain statements with stage markers and no try-catch. Select the sandbox tracks first.",
       "config": {
         "permissions": {
           "track": {
             "read": [
               "selected"
-            ]
-          },
-          "files": {
-            "write": true
-          }
-        }
-      }
-    },
-    {
-      "id": "env.shapes",
-      "name": "R3-7 Object Shapes",
-      "description": "Dumps the shape of _vars, tracks, playlists and custom tags. Read-only. Select the sandbox tracks first.",
-      "config": {
-        "permissions": {
-          "track": {
-            "read": [
-              "selected"
-            ]
-          },
-          "playlist": {
-            "read": [
-              "all"
-            ]
-          },
-          "customTag": {
-            "read": [
-              "all"
             ]
           },
           "files": {
