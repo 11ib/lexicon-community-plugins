@@ -457,22 +457,43 @@ expose `trackIds` until you call `getTrackIds()`.
 
 ## What a denied permission actually does
 
-Not an error. The capability is simply **omitted** from what gets injected:
+Not an error. There is no permission exception at any point.
 
 | You ask for | You get without the permission |
 | --- | --- |
-| `_vars.playlistsAll` | a non-array object with no `length` — iterating finds nothing |
+| `_vars.playlistsAll` | `null` — plain null, `String(x)` is `"null"` |
 | `_vars.tracksAllAmount` | `null` |
 | `_library.track.getNextAllBatch()` | `TypeError: getNextAllBatch is not a function` |
 
+The last one is a scope gate: with `track.read: ["selected"]` but not `"all"`,
+that accessor is replaced by a non-callable object.
+
 So a plugin with the wrong permissions doesn't fail loudly on a user's machine.
-It loops over an empty placeholder, finds nothing, reports success, and does
-nothing at all — or dies on a `TypeError` that never mentions permissions.
+It reads `null`, iterates nothing, reports success and does nothing at all — or
+dies on a `TypeError` that never mentions permissions.
 
 The harness is deliberately **stricter**: it throws a `PermissionError` naming
-the exact manifest line to add, because a test that silently passes over an
-empty placeholder is worthless. `npm run check:permissions` catches the same
-mistakes statically.
+the exact manifest line to add, because a test that silently passes over a
+`null` is worthless. `npm run check:permissions` catches the same mistakes
+statically.
+
+### Permissions are not a sandbox boundary
+
+Most methods stay **callable regardless of the manifest**. An action granted
+only `track.read: ["selected"]` still sees real functions for:
+
+```
+_library.track.create      _library.track.delete
+_library.playlist.create   _storage.save
+_network.GET               _files.read / _files.list
+_ui.control
+```
+
+Only the scope-gated read accessors were swapped out. Whether calling one of
+these actually performs the write is still being probed — but until that's
+settled, **treat `config.json` permissions as declarative intent for reviewers,
+not as a security boundary.** Review contributed code on what it *does*, not on
+what it *declares*.
 
 ---
 

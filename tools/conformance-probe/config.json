@@ -6,9 +6,9 @@
   },
   "actions": [
     {
-      "id": "perm.denied",
-      "name": "R6-1 Denied Capability Values",
-      "description": "Examines a denied capability using only String and JSON, with stage markers. Select the sandbox tracks first.",
+      "id": "perm.enforce",
+      "name": "R7-1 Are Permissions Enforced For Writes",
+      "description": "Calls storage, files and playlist create without holding those permissions, to see whether the calls actually take effect.",
       "config": {
         "permissions": {
           "track": {

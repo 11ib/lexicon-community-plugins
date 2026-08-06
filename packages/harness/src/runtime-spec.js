@@ -44,26 +44,38 @@ export const RUNTIME_SPEC = {
   // What _settings[key] gives for a key not declared in config.json.
   settingsMissingValue: { value: undefined, source: 'probe' },
 
-  // How Lexicon reacts to touching an ungranted capability: the capability is
-  // simply OMITTED from what gets injected. There is no permission error.
+  // How Lexicon reacts to touching an ungranted capability. There is no
+  // permission error, ever.
   //
-  //   denied _vars read      -> a useless placeholder, NOT undefined and NOT
-  //                             an array. _vars.playlistsAll came back as a
-  //                             non-array object with no length;
-  //                             _vars.tracksAllAmount came back as null.
-  //                             Execution continues.
-  //   denied _library method -> absent from the object, so calling it is a
-  //                             plain TypeError:
-  //                             "getNextAllBatch is not a function"
+  //   denied _vars read  -> null. Plain null: `x === null` is true,
+  //                         String(x) is "null", JSON.stringify(x) is "null".
+  //                         Execution continues.
+  //   denied read scope  -> the accessor is replaced by a non-callable object.
+  //                         With track.read: ["selected"] but not "all",
+  //                         typeof _library.track.getNextAllBatch is "object",
+  //                         so calling it is a plain TypeError:
+  //                         "getNextAllBatch is not a function"
   //
-  // So a plugin with the wrong permissions does not fail loudly. It iterates
-  // an empty placeholder, finds nothing, reports success, and does nothing —
-  // or dies on a TypeError that never mentions permissions.
+  // So a plugin with the wrong permissions does not fail loudly. It reads null,
+  // iterates nothing, reports success and does nothing — or dies on a TypeError
+  // that never mentions permissions.
   //
   // The harness is deliberately STRICTER: it throws PermissionError naming the
-  // exact manifest line to add, because a test that silently passes over an
-  // empty placeholder is worthless.
-  permissionDenialMode: { value: 'omitted', source: 'probe' },
+  // exact manifest line to add, because a test that silently passes over a null
+  // is worthless.
+  permissionDenialMode: { value: 'null-and-missing-accessors', source: 'probe' },
+
+  // IMPORTANT and unresolved: most _library / _storage / _network / _ui methods
+  // remain CALLABLE regardless of the manifest. An action granted only
+  // track.read: ["selected"] still sees functions for track.create,
+  // track.delete, playlist.create, _storage.save, _network.GET, _files.read,
+  // _files.list and _ui.control.
+  //
+  // Only the read accessors gated by scope were swapped out. Whether calling an
+  // ungranted method actually performs the write has NOT been established — the
+  // probes never got that far. Until it is, treat config.json permissions as
+  // declarative intent for reviewers, NOT as a security boundary.
+  ungrantedMethodsStillCallable: { value: true, source: 'probe' },
 
   // Some failures still terminate the script where it stands, with no log
   // entry, no error, and no chance to react. Confirmed for a `try` block whose

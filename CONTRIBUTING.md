@@ -44,6 +44,18 @@ The permission check reports two kinds of problem:
 
 Plugins run inside other people's libraries. Ask for as little as possible.
 
+**Permissions are not a sandbox.** Probing a real Lexicon showed that most
+capabilities stay callable regardless of what `config.json` declares — an action
+granted only `track.read` still sees working functions for `playlist.create`,
+`_storage.save`, `_network.GET`, `_files.read` and `_ui.control`. Only certain
+scope-gated read accessors are actually withheld, and a denied read returns
+`null` rather than raising.
+
+So the manifest is a **statement of intent to reviewers**, not an enforced
+boundary. Review what the code *does*, not what it *declares*. `npm run
+check:permissions` flags mismatches in both directions, but a reviewer reading
+the diff is the real control.
+
 **Reviewed closely on every PR:**
 
 - `network` — list explicit domains. Wildcards are rejected by CI. Say in the PR
