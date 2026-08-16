@@ -77,6 +77,11 @@ async function runInstalls(targets, context) {
     if (!json) {
       out(line(PROGRESS[plan.action], entry.id, plan.reason))
 
+      // Never silently install bytes from somewhere other than the index says.
+      if (entry.localZip) {
+        out(`${' '.repeat(STATUS_WIDTH + 1)}  from ${entry.zipUrl} (next to the index, not the release URL)`)
+      }
+
       for (const permission of entry.permissions ?? []) {
         out(`${' '.repeat(STATUS_WIDTH + 1)}  permissions: ${permission}`)
       }

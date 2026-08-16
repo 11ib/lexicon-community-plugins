@@ -315,6 +315,7 @@ describe('index sources', () => {
 
     expect(result.code).toBe(0)
     expect(installedConfig('example').id).toBe('tester.demo')
+    expect(result.out).toMatch(/from .*example\.zip \(next to the index/)
   })
 
   it('refuses an index from a newer schema version', async () => {

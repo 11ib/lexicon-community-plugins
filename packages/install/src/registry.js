@@ -103,6 +103,7 @@ export async function fetchIndex(source, options = {}) {
     for (const entry of index.plugins) {
       if (!isHttp(entry.zipUrl)) {
         entry.zipUrl = resolve(dir, entry.zipUrl)
+        entry.localZip = true
         continue
       }
 
@@ -110,6 +111,7 @@ export async function fetchIndex(source, options = {}) {
 
       if (existsSync(sibling)) {
         entry.zipUrl = sibling
+        entry.localZip = true
       }
     }
   }
