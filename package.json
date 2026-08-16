@@ -15,7 +15,8 @@
     "check:permissions": "node scripts/check-permissions.mjs",
     "check:versions": "node scripts/check-versions.mjs",
     "build": "node scripts/build-zips.mjs",
-    "verify": "npm run lint && npm run validate && npm run check:permissions && npm run check:versions && npm run test"
+    "verify": "npm run lint && npm run validate && npm run check:permissions && npm run check:versions && npm run test",
+    "new:plugin": "node scripts/new-plugin.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

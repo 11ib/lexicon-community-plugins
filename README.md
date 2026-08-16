@@ -49,6 +49,10 @@ npm run verify      # lint + validate + permission check + tests
 
 ## Writing a plugin
 
+```bash
+npm run new:plugin my-plugin     # scaffolds something that already passes verify
+```
+
 A plugin is a folder in `plugins/` with a `config.json` and one `.js` file per
 action. **The action's `id` must exactly match its filename.**
 

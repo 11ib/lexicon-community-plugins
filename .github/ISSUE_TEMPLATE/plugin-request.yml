@@ -1,0 +1,94 @@
+name: Request a plugin
+description: Describe something you want Lexicon to do, in plain language. You do not need to write any code.
+title: "[Plugin request] "
+labels: ["plugin-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe what you want in your own words — no code required.
+
+        A maintainer builds it, tests it against the sandbox rules, and opens a
+        pull request that credits you. Plugins can read and change your track
+        and playlist data; they cannot talk to hardware, control other apps, or
+        do anything Lexicon itself cannot do.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What should it do?
+      description: One or two sentences, the way you would explain it to another DJ.
+      placeholder: Set every track's colour based on its energy, so my library is colour-coded when I'm digging.
+    validations:
+      required: true
+
+  - type: textarea
+    id: example
+    attributes:
+      label: A concrete example
+      description: One track or playlist, before and after. This is the single most useful thing you can give us — it settles questions the description leaves open.
+      placeholder: |
+        Before: "Midnight City" — energy 8, colour: none
+        After:  "Midnight City" — energy 8, colour: red
+
+        Before: "Teardrop" — energy 2, colour: none
+        After:  "Teardrop" — energy 2, colour: blue
+    validations:
+      required: true
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: What should it run on?
+      options:
+        - The tracks I have selected
+        - My whole library
+        - Playlists I have selected
+        - All my playlists
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: fields
+    attributes:
+      label: Which fields does it change?
+      description: Rating, colour, comment, genre, BPM, playlist name, tags… Say "none, it only reads" if it just reports something.
+      placeholder: colour
+    validations:
+      required: true
+
+  - type: dropdown
+    id: network
+    attributes:
+      label: Does it need data from the internet?
+      description: Looking anything up online (BPM databases, streaming metadata, your own API) needs a named domain and gets reviewed closely.
+      options:
+        - "No"
+        - "Yes — I will name the service below"
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: settings
+    attributes:
+      label: Anything you would want to configure?
+      description: Values you would want to change without editing code — a threshold, a prefix, a tag name. Optional.
+      placeholder: The energy level that counts as "high" (default 7)
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: How you work, what you have tried, links to a forum thread. Optional.
+
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this has not been requested
+          required: true
+        - label: I understand this is community work with no timeline, and that a maintainer may decide it is not possible in Lexicon's plugin sandbox
+          required: true

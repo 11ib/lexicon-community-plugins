@@ -6,21 +6,32 @@ execution model and the harness API. This file covers the process.
 ## Adding a plugin
 
 ```bash
-mkdir -p plugins/my-plugin/__tests__
+npm run new:plugin my-plugin
 ```
 
-1. Write `plugins/my-plugin/config.json` — one `id` per plugin, one entry in
-   `actions` per action, plus `version` and `keywords` (see below)
-2. Write `plugins/my-plugin/<action-id>.js` for each action (filename must match
-   the action id exactly)
-3. Write `plugins/my-plugin/__tests__/<action-id>.test.js` — required, CI fails
-   without it
+That scaffolds a manifest, an action and a test that already pass every gate,
+so the first failure you see is about your code rather than boilerplate. Then:
+
+1. Fill in `config.json` — the real description, `keywords`, and the narrowest
+   permissions that work
+2. Write the action in `<action-id>.js` (the filename must match the action id
+   exactly)
+3. Replace the scaffolded tests in `__tests__/<action-id>.test.js`
 4. Run `npm run verify`
 5. Install it in a real Lexicon and run it against a library you don't mind
    changing
 6. Open a PR
 
-Copy `plugins/example-energy-rating/` as a starting point.
+`plugins/example-energy-rating/` is a complete working example, and
+[`AGENTS.md`](AGENTS.md) is the same loop written for a coding agent.
+
+## Requesting a plugin instead of writing one
+
+If you want a plugin but don't write code, open a
+[plugin request](../../issues/new?template=plugin-request.yml). Describe it in
+plain language with a before/after example for one track — that example settles
+more questions than any amount of description. A maintainer builds it and the
+PR credits you.
 
 ## Versions
 

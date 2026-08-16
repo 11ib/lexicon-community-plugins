@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Harness or tooling bug
+    url: https://github.com/11ib/lexicon-community-plugins/issues/new
+    about: The harness and real Lexicon disagree, or a gate script is wrong — open a blank issue with what each one did.
+  - name: Lexicon plugin documentation
+    url: https://www.lexicondj.com/docs/developers/plugin
+    about: The official plugin API reference.
+  - name: Lexicon forum
+    url: https://discuss.lexicondj.com/c/advanced/plugins/33
+    about: Questions about Lexicon itself, rather than the plugins in this repo.
