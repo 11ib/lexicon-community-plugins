@@ -268,6 +268,8 @@ narrow permissions, tests for every action, and `npm run verify` green.
 
 ## Links
 
+- [The registry index](docs/REGISTRY.md) — the JSON every release publishes,
+  and how anything other than this CLI would consume it
 - [Plugin documentation](https://www.lexicondj.com/docs/developers/plugin)
 - [Local API documentation](https://www.lexicondj.com/docs/developers/api)
 - [Official example plugins](https://github.com/rekordcloud/lexicon-example-plugins)

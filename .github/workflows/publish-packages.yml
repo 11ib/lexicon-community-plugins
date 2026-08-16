@@ -1,0 +1,69 @@
+name: Publish packages
+
+# Manual on purpose. The plugin ZIPs are released on every tag, but the
+# packages only change when their own code does, and an npm publish cannot be
+# undone — a bad version has to be superseded, not deleted.
+#
+# Requires an NPM_TOKEN secret with publish rights on the @lexicon-plugins
+# scope and "Bypass 2FA" enabled; npm refuses a publish from CI otherwise.
+#
+# Bump the package version first. A version already on the registry is skipped
+# rather than failed, so running this with "both" after changing one package
+# does the right thing.
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Which package to publish
+        type: choice
+        options: [both, install, harness]
+        default: both
+
+permissions:
+  contents: read
+  # npm provenance: links the published tarball to this workflow run, so the
+  # npm page shows where the bytes came from. Requires the repository field in
+  # each package.json.
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+      - run: npm run verify
+
+      - name: Publish
+        run: |
+          set -euo pipefail
+
+          publish() {
+            folder="$1"
+            name=$(node -p "require('./packages/$folder/package.json').name")
+            version=$(node -p "require('./packages/$folder/package.json').version")
+
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already on the registry — skipping"
+              return
+            fi
+
+            echo "publishing $name@$version"
+            npm publish --workspace "$name" --access public --provenance
+          }
+
+          case "${{ inputs.package }}" in
+            install) publish install ;;
+            harness) publish harness ;;
+            *) publish install; publish harness ;;
+          esac
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

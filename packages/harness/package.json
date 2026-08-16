@@ -9,7 +9,8 @@
   },
   "files": [
     "index.js",
-    "src/"
+    "src/",
+    "README.md"
   ],
   "keywords": [
     "lexicon",
@@ -18,5 +19,13 @@
     "plugin",
     "testing"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/11ib/lexicon-community-plugins.git",
+    "directory": "packages/harness"
+  },
+  "engines": {
+    "node": ">=20"
+  }
 }
