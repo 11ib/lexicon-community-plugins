@@ -1,6 +1,6 @@
 // Test harness for Lexicon DJ plugins.
 //
-//   import { runAction } from '@lexicon-community/harness'
+//   import { runAction } from '@lexicon-plugins/harness'
 //
 //   const run = await runAction({
 //     plugin: 'plugins/bpm-tools',

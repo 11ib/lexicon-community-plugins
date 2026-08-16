@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { runAction } from '@lexicon-community/harness'
+import { runAction } from '@lexicon-plugins/harness'
 
 const PLUGIN = new URL('..', import.meta.url).pathname
 

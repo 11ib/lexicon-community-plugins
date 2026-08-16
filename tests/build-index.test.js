@@ -1,6 +1,6 @@
 // Tests for the registry index that build-zips.mjs emits.
 //
-// The index is the contract between this repo and @lexicon-community/install:
+// The index is the contract between this repo and @lexicon-plugins/install:
 // a wrong sha256 or a wrong zipUrl is an install failure on a user's machine,
 // with no way to notice it here except a test that reads the bytes back.
 

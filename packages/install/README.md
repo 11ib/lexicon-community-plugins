@@ -1,13 +1,13 @@
-# @lexicon-community/install
+# @lexicon-plugins/install
 
 Installs [Lexicon DJ](https://www.lexicondj.com) community plugins from the
 command line, instead of downloading a ZIP and dragging it into a folder.
 
 ```bash
-npx @lexicon-community/install install lexicon-community.example-energy-rating
-npx @lexicon-community/install install --all
-npx @lexicon-community/install update
-npx @lexicon-community/install list
+npx @lexicon-plugins/install install lexicon-community.example-energy-rating
+npx @lexicon-plugins/install install --all
+npx @lexicon-plugins/install update
+npx @lexicon-plugins/install list
 ```
 
 Restart Lexicon afterwards — it reads the Plugins folder at startup.

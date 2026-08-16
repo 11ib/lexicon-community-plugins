@@ -6,8 +6,8 @@ harness that runs plugin actions **outside** of Lexicon so they can be tested in
 ## Install a plugin
 
 ```bash
-npx @lexicon-community/install list
-npx @lexicon-community/install install lexicon-community.example-energy-rating
+npx @lexicon-plugins/install list
+npx @lexicon-plugins/install install lexicon-community.example-energy-rating
 ```
 
 Then restart Lexicon and run it from the top menu bar → **Plugins**. The
@@ -143,7 +143,7 @@ violations that halt your script with no error at all.
 
 ```js
 import { describe, it, expect } from 'vitest'
-import { runAction } from '@lexicon-community/harness'
+import { runAction } from '@lexicon-plugins/harness'
 
 const PLUGIN = new URL('..', import.meta.url).pathname
 

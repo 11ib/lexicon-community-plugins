@@ -34,7 +34,7 @@ jobs:
       # Each plugin ships as its own ZIP with config.json at the archive root,
       # which is what Lexicon expects in Documents/Lexicon/Plugins.
       #
-      # index.json rides along as an asset: @lexicon-community/install reads it
+      # index.json rides along as an asset: @lexicon-plugins/install reads it
       # from releases/latest/download/index.json, so publishing a release is
       # what makes a plugin installable.
       - name: Attach plugin ZIPs and index.json to the release

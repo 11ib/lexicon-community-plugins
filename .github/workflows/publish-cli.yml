@@ -1,10 +1,10 @@
 name: Publish installer CLI
 
 # Manual on purpose. The plugin ZIPs are released on every tag, but
-# @lexicon-community/install only changes when its own code does, and an npm
+# @lexicon-plugins/install only changes when its own code does, and an npm
 # publish cannot be undone — a bad version has to be superseded, not deleted.
 #
-# Requires an NPM_TOKEN secret with publish rights on the @lexicon-community
+# Requires an NPM_TOKEN secret with publish rights on the @lexicon-plugins
 # scope. Bump packages/install/package.json first; npm rejects a republish of
 # an existing version, which is the safety net here.
 on:
@@ -34,6 +34,6 @@ jobs:
       - run: npm run verify
 
       - name: Publish
-        run: npm publish --workspace @lexicon-community/install --access public --provenance
+        run: npm publish --workspace @lexicon-plugins/install --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

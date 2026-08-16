@@ -1,5 +1,5 @@
 {
-  "name": "@lexicon-community/harness",
+  "name": "@lexicon-plugins/harness",
   "version": "0.1.0",
   "description": "Run and test Lexicon DJ plugin actions outside of Lexicon.",
   "type": "module",

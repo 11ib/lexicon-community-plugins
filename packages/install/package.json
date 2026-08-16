@@ -1,5 +1,5 @@
 {
-  "name": "@lexicon-community/install",
+  "name": "@lexicon-plugins/install",
   "version": "0.1.0",
   "description": "Install Lexicon DJ community plugins from the command line.",
   "type": "module",

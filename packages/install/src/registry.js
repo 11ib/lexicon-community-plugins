@@ -89,7 +89,7 @@ export async function fetchIndex(source, options = {}) {
   if (typeof index.schemaVersion === 'number' && index.schemaVersion > SUPPORTED_SCHEMA_VERSION) {
     throw new CliError(
       `plugin index is schema version ${index.schemaVersion}, this CLI understands ${SUPPORTED_SCHEMA_VERSION}`,
-      'upgrade with: npm install -g @lexicon-community/install'
+      'upgrade with: npm install -g @lexicon-plugins/install'
     )
   }
 

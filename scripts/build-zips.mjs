@@ -10,7 +10,7 @@
 //
 // index.json is the registry: one entry per plugin with everything an
 // installer or a search page needs, including the sha256 of the ZIP this run
-// just wrote. @lexicon-community/install consumes it.
+// just wrote. @lexicon-plugins/install consumes it.
 //
 // Env overrides (used by tests and by release.yml):
 //   PLUGINS_DIR   source tree            default <root>/plugins
