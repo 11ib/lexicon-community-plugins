@@ -10,7 +10,7 @@ mkdir -p plugins/my-plugin/__tests__
 ```
 
 1. Write `plugins/my-plugin/config.json` — one `id` per plugin, one entry in
-   `actions` per action
+   `actions` per action, plus `version` and `keywords` (see below)
 2. Write `plugins/my-plugin/<action-id>.js` for each action (filename must match
    the action id exactly)
 3. Write `plugins/my-plugin/__tests__/<action-id>.test.js` — required, CI fails
@@ -22,14 +22,49 @@ mkdir -p plugins/my-plugin/__tests__
 
 Copy `plugins/example-energy-rating/` as a starting point.
 
+## Versions
+
+Plugins are installed by `npx @lexicon-plugins/install`, which decides whether
+an installed copy is current by comparing its `version` against the one in the
+[registry index](docs/REGISTRY.md).
+
+```json
+{
+  "id": "yourname.my-plugin",
+  "version": "1.0.0",
+  "keywords": ["tags", "cleanup"]
+}
+```
+
+Neither field is part of Lexicon's own manifest — it ignores unknown root
+fields — so they cost nothing in the app and are what make the plugin
+installable and findable outside it.
+
+**Bump `version` in the same PR as any change to a file that ships.** An edited
+action with an unchanged version reaches nobody: every existing install
+compares versions, concludes it is current, and never downloads it.
+`npm run check:versions` enforces this, comparing against the base branch:
+
+- Changed a shipped file without bumping → error
+- Changed only `__tests__/` → fine, tests are stripped from the ZIP
+- New plugin → needs a `version`, nothing to bump against
+- Version went backwards → error
+
+Use judgement on the number: patch for a fix, minor for new behaviour, major
+when existing users would notice something they relied on changing.
+
+Locally the check is skipped when it cannot resolve `origin/main` — a shallow
+or offline clone will not fail `verify`, but CI runs it with `--strict`.
+
 ## What CI checks
 
-`npm run verify` runs the same four gates CI does:
+`npm run verify` runs the same gates CI does:
 
 ```bash
 npm run lint               # Lexicon's parser restrictions
 npm run validate           # config.json schema, file/action/test pairing
 npm run check:permissions  # code vs. manifest, both directions
+npm run check:versions     # version bumped when shipped files changed
 npm test                   # your tests
 ```
 
@@ -100,6 +135,20 @@ Match the surrounding code. Beyond that:
 - Use `_helpers.Log` for debugging detail, not user-facing summaries
 - Throw a clear `Error` when a setting is invalid — the message is shown to the user
 - Call `_ui.progress()` in long loops
+
+## After your PR is merged
+
+Merging does not ship anything. A maintainer tags a release
+(`git tag vX.Y.Z && git push origin vX.Y.Z`), which builds every plugin ZIP,
+regenerates `index.json` with a fresh checksum per plugin, and attaches both to
+the release. That is the point at which
+
+```bash
+npx @lexicon-plugins/install update
+```
+
+starts offering your version to people who already have the plugin. If you need
+a release cut, say so in the PR.
 
 ## Reporting a harness bug
 

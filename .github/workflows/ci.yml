@@ -10,7 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Full history: the version gate diffs this branch against its base.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -29,6 +32,13 @@ jobs:
 
       - name: Check permissions match code
         run: npm run check:permissions
+
+      # An edited plugin that keeps its old version installs nowhere: every
+      # existing copy compares versions and concludes it is current.
+      - name: Check plugin versions were bumped
+        run: npm run check:versions -- --strict
+        env:
+          BASE_REF: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || 'HEAD^' }}
 
       - name: Test
         run: npm test
