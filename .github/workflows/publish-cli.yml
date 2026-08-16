@@ -12,6 +12,10 @@ on:
 
 permissions:
   contents: read
+  # npm provenance: links the published tarball to this workflow run, so the
+  # npm page shows where the bytes came from. Requires the repository field in
+  # packages/install/package.json.
+  id-token: write
 
 jobs:
   publish:
@@ -30,6 +34,6 @@ jobs:
       - run: npm run verify
 
       - name: Publish
-        run: npm publish --workspace @lexicon-community/install --access public
+        run: npm publish --workspace @lexicon-community/install --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
