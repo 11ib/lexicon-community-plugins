@@ -12,7 +12,7 @@
 // in it, with no indication of which action is at fault.
 
 import { describe, it, expect } from 'vitest'
-import { execFileSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
@@ -42,17 +42,17 @@ function validate(config, extraFiles = {}) {
   }
 
   try {
-    const stdout = execFileSync('node', [SCRIPT], {
+    // Capture the validator's own output instead of letting it print into the
+    // test run, where its intentional errors read as test failures. Both
+    // streams, since warnings go to stderr on an otherwise successful run.
+    const result = spawnSync('node', [SCRIPT], {
       cwd: ROOT,
       env: { ...process.env, PLUGINS_DIR: join(base, 'plugins') },
       encoding: 'utf8',
-      // Capture the validator's own output instead of letting it print into
-      // the test run, where its intentional errors read as test failures.
       stdio: ['ignore', 'pipe', 'pipe']
     })
-    return { ok: true, output: stdout }
-  } catch (err) {
-    return { ok: false, output: `${err.stdout ?? ''}${err.stderr ?? ''}` }
+
+    return { ok: result.status === 0, output: `${result.stdout ?? ''}${result.stderr ?? ''}` }
   } finally {
     rmSync(base, { recursive: true, force: true })
   }
@@ -154,22 +154,20 @@ describe('manifest structure', () => {
     writeFileSync(join(dir, 'config.json'), JSON.stringify(config, null, 2))
     writeFileSync(join(dir, '__tests__', 'my.action.test.js'), '// test\n')
 
-    let output = ''
+    let result
     try {
-      execFileSync('node', [SCRIPT], {
+      result = spawnSync('node', [SCRIPT], {
         cwd: ROOT,
         env: { ...process.env, PLUGINS_DIR: join(base, 'plugins') },
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe']
       })
-      throw new Error('expected validation to fail')
-    } catch (err) {
-      output = `${err.stdout ?? ''}${err.stderr ?? ''}`
     } finally {
       rmSync(base, { recursive: true, force: true })
     }
 
-    expect(output).toContain('has no matching my.action.js')
+    expect(result.status).not.toBe(0)
+    expect(`${result.stdout}${result.stderr}`).toContain('has no matching my.action.js')
   })
 
   it('rejects a js file not declared as an action', () => {
@@ -252,6 +250,31 @@ describe('manifest structure', () => {
         ]
       })
     )
+
+    expect(result.ok).toBe(false)
+  })
+})
+
+describe('version', () => {
+  // Not an error: plugins predating the registry have no version and Lexicon
+  // does not care. But the installer cannot tell an update from a reinstall
+  // without one, so a contributor should hear about it here.
+  it('warns when a plugin has no version, without failing', () => {
+    const result = validate(manifest())
+
+    expect(result.ok, result.output).toBe(true)
+    expect(result.output).toContain('the installer cannot detect updates')
+  })
+
+  it('accepts a semver version', () => {
+    const result = validate(manifest({ version: '1.2.3', keywords: ['tagging'] }))
+
+    expect(result.ok, result.output).toBe(true)
+    expect(result.output).not.toContain('cannot detect updates')
+  })
+
+  it('rejects a version that is not three numbers', () => {
+    const result = validate(manifest({ version: 'v1' }))
 
     expect(result.ok).toBe(false)
   })

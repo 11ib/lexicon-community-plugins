@@ -33,10 +33,12 @@ jobs:
       - name: Test
         run: npm test
 
-      - name: Build plugin ZIPs
+      - name: Build plugin ZIPs and the registry index
         run: npm run build
 
       - uses: actions/upload-artifact@v4
         with:
           name: plugin-zips
-          path: dist/*.zip
+          path: |
+            dist/*.zip
+            dist/index.json

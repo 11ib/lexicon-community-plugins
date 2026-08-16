@@ -1,5 +1,7 @@
 {
   "id": "lexicon-community.example-energy-rating",
+  "version": "1.0.0",
+  "keywords": ["energy", "rating", "stars", "playlist", "example"],
   "author": {
     "name": "Lexicon Community",
     "email": "10055660+11ib@users.noreply.github.com"

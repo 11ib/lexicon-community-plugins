@@ -1,0 +1,35 @@
+{
+  "name": "@lexicon-community/install",
+  "version": "0.1.0",
+  "description": "Install Lexicon DJ community plugins from the command line.",
+  "type": "module",
+  "bin": {
+    "lexicon-plugins": "bin/lexicon-plugins.js"
+  },
+  "exports": {
+    ".": "./src/cli.js"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md"
+  ],
+  "keywords": [
+    "lexicon",
+    "lexicondj",
+    "dj",
+    "plugin",
+    "installer",
+    "cli"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "yauzl": "^3.2.0"
+  },
+  "devDependencies": {
+    "yazl": "^3.3.1"
+  }
+}

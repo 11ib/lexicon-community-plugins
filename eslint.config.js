@@ -311,6 +311,7 @@ export default [
         process: 'readonly',
         URL: 'readonly',
         Buffer: 'readonly',
+        fetch: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly'
       }

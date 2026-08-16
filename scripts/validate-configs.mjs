@@ -92,6 +92,13 @@ for (const folder of listPluginDirs()) {
   }
   seenIds.set(config.id, folder)
 
+  // Not required — plugins predating the registry index have no version, and
+  // Lexicon does not care either way. But the installer CLI cannot tell an
+  // update from a reinstall without one, so say so early.
+  if (!config.version) {
+    warn(folder, 'no "version" in config.json — the installer cannot detect updates for it')
+  }
+
   const jsFiles = readdirSync(dir).filter((f) => f.endsWith('.js'))
   const actionIds = config.actions.map((a) => a.id)
 

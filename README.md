@@ -5,6 +5,18 @@ harness that runs plugin actions **outside** of Lexicon so they can be tested in
 
 ## Install a plugin
 
+```bash
+npx @lexicon-community/install list
+npx @lexicon-community/install install lexicon-community.example-energy-rating
+```
+
+Then restart Lexicon and run it from the top menu bar → **Plugins**. The
+installer verifies each ZIP against the `sha256` published in the registry
+index, and `update` keeps them current. See
+[packages/install](packages/install/README.md).
+
+By hand instead:
+
 1. Download the plugin's `.zip` from [Releases](../../releases)
 2. Drop it in `Documents/Lexicon/Plugins`
 3. Restart Lexicon
@@ -54,6 +66,8 @@ plugins/
 ```json
 {
   "id": "yourname.my-plugin",
+  "version": "1.0.0",
+  "keywords": ["tags", "cleanup"],
   "author": { "name": "Your Name" },
   "actions": [
     {
@@ -77,6 +91,11 @@ plugins/
 
 Ask for the narrowest permissions that work. CI warns about grants your code
 never uses, and reviewers will ask you to drop them.
+
+`version` and `keywords` are not part of Lexicon's own manifest — it ignores
+unknown root fields. They feed `dist/index.json`, the registry the installer
+reads: bump `version` in the same PR that changes a plugin, or nobody's
+`update` will pick the change up.
 
 ### 2. The action
 
